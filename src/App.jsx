@@ -55,7 +55,7 @@ import {
   ShoppingBag,
   Undo2,
   ShieldCheck,
-  RefreshCcw // Added Icon for Refund
+  RefreshCcw
 } from 'lucide-react';
 
 // --- 🔴 FIREBASE CONFIG (Aapki Keys) ---
@@ -161,14 +161,17 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
+// FIXED CARD COMPONENT: Removed truncate, added break-words, adjusted font size
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
-  <div className={`p-5 rounded-2xl shadow-sm border flex items-start justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-    <div className="flex-1 min-w-0">
-      <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
-      <h3 className={`text-lg md:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {subtext && <p className={`text-[10px] md:text-xs mt-1 truncate ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+  <div className={`p-4 md:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+    <div className="flex justify-between items-start mb-2">
+       <div className={`p-2.5 rounded-xl shadow-sm ${colorClass}`}><Icon size={20} /></div>
+       <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
     </div>
-    <div className={`p-3 rounded-xl shadow-sm ${colorClass} shrink-0 ml-2`}><Icon size={22} /></div>
+    <div>
+      <h3 className={`text-base sm:text-lg md:text-2xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
+      {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+    </div>
   </div>
 );
 
@@ -524,7 +527,6 @@ export default function App() {
     } catch (err) { showToast(err.message, 'error'); playSound('error'); } finally { setIsSubmitting(false); }
   };
 
-  // New helper for Payment Customer Selection
   const paymentCustomerMatches = useMemo(() => {
     if (!paymentCustomerSearch) return [];
     const lower = paymentCustomerSearch.toLowerCase();
@@ -537,7 +539,6 @@ export default function App() {
     setShowCustomerSuggestions(false);
   };
 
-  // New helper for Sale Customer Selection
   const saleCustomerMatches = useMemo(() => {
     if (!saleForm.customerName) return [];
     const lower = saleForm.customerName.toLowerCase();
@@ -570,7 +571,7 @@ export default function App() {
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
-        setPaymentCustomerSearch(''); // Clear search
+        setPaymentCustomerSearch(''); 
         showToast("Payment Recorded!"); playSound('success');
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
@@ -588,7 +589,6 @@ export default function App() {
       if (!amountToRefund || amountToRefund <= 0) { showToast("Amount must be positive", 'error'); return; }
       
       try {
-        // Reduce totalPaid
         const newPaid = Math.max(0, (cust.totalPaid || 0) - amountToRefund);
 
         await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, paymentForm.customerId), {
@@ -599,12 +599,12 @@ export default function App() {
             customerId: paymentForm.customerId,
             amount: amountToRefund,
             date: serverTimestamp(),
-            type: 'Refund' // Mark as Refund
+            type: 'Refund'
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
         setPaymentCustomerSearch(''); 
-        showToast("Refund Processed!"); playSound('delete'); // Different sound for refund
+        showToast("Refund Processed!"); playSound('delete');
       } catch (err) { showToast("Error processing refund", 'error'); }
   };
  
@@ -797,7 +797,7 @@ export default function App() {
                     <div className="flex-1 overflow-auto">
                        <table className="w-full text-left text-sm table-fixed min-w-[600px]">
                           <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-slate-500'} shadow-sm`}>
-                            <tr><th className="p-4 w-1/6">ID</th><th className="w-1/4">Brand</th><th className="text-right w-1/6">Cost</th><th className="text-right w-1/6">Sale</th><th className="text-center w-1/6">Status</th><th className="text-center w-1/6">Act</th></tr>
+                            <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200/10">
                              {filteredInv.length === 0 ? (
@@ -807,7 +807,7 @@ export default function App() {
                                    <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}>
                                       <td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className="truncate">{i.brand}</td><td className="text-right opacity-60">{i.orgPrice}</td><td className="text-right font-bold">{i.salePrice}</td>
                                       <td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td>
-                                      <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-1 hover:bg-blue-500/10 rounded"><Edit size={14}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-1 hover:bg-red-500/10 rounded"><Trash2 size={14}/></button></>}</td>
+                                      <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded"><Edit size={16}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded"><Trash2 size={16}/></button></>}</td>
                                    </tr>
                                 ))
                              )}
@@ -932,9 +932,9 @@ export default function App() {
                <div className={`shrink-0 p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
                   <div className="flex-1 w-full">
                      <h3 className="font-bold mb-3 text-lg flex items-center gap-2"><Wallet size={20} className="text-blue-500"/> Quick Payment</h3>
-                     <div className="flex gap-3 items-start">
+                     <div className="flex flex-col sm:flex-row gap-3 items-start w-full">
                         {/* SMART SEARCHABLE INPUT (REPLACES OLD SELECT) */}
-                        <div className="relative flex-1">
+                        <div className="relative flex-1 w-full">
                            <input
                               type="text"
                               placeholder="Search Customer..."
@@ -963,10 +963,12 @@ export default function App() {
                            )}
                         </div>
                         
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} placeholder="Amount" className={`p-3 rounded-xl bg-transparent border w-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-200'}`} value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm, amount:e.target.value})}/>
-                        <button onClick={handleAddPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95">Add</button>
-                        {/* ADDED REFUND BUTTON */}
-                        <button onClick={handleRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95" title="Refund Amount"><RefreshCcw size={20}/></button>
+                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} placeholder="Amount" className={`p-3 rounded-xl bg-transparent border w-full sm:w-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-200'}`} value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm, amount:e.target.value})}/>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                           <button onClick={handleAddPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex-1">Add</button>
+                           {/* ADDED REFUND BUTTON */}
+                           <button onClick={handleRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95" title="Refund Amount"><RefreshCcw size={20}/></button>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -996,7 +998,7 @@ export default function App() {
          {/* MAMA (Renamed to PARTNER SHARE in UI) */}
          {activeTab === 'mama' && (
             <div className="space-y-6 h-full flex flex-col animate-fade-in">
-               <div className="grid grid-cols-3 gap-4 shrink-0">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Total</p><p className="text-xl font-black text-blue-500">{formatCurrency(stats.mamaTotal)}</p></div>
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Pending</p><p className="text-xl font-black text-rose-500">{formatCurrency(stats.mamaPending)}</p></div>
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Paid</p><p className="text-xl font-black text-emerald-500">{formatCurrency(stats.mamaPaid)}</p></div>
@@ -1098,7 +1100,7 @@ export default function App() {
 
          {/* CUSTOMER HISTORY MODAL */}
          {viewingCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1112,34 +1114,34 @@ export default function App() {
                  {/* Modal Content */}
                  <div className="flex-1 overflow-y-auto p-6">
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-3 gap-3 mb-8">
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Total Bill</p>
-                          <p className="text-lg font-black text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
+                          <p className="text-lg font-bold text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
                        </div>
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Paid</p>
-                          <p className="text-lg font-black text-emerald-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
+                          <p className="text-lg font-bold text-green-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
                        </div>
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Balance</p>
-                          <p className="text-lg font-black text-rose-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
+                          <p className="text-lg font-bold text-red-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
 
                     {/* Tabs for History */}
-                    <div className="flex gap-3 mb-6 p-1 bg-gray-100/50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex gap-2 mb-4">
                        <button 
                           onClick={() => setCustomerModalTab('payments')}
-                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'payments' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
                        >
-                          <Receipt size={16} /> Payments
+                          <Receipt size={14} /> Payments
                        </button>
                        <button 
                           onClick={() => setCustomerModalTab('purchases')}
-                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'purchases' ? 'bg-white dark:bg-slate-700 shadow-sm text-purple-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
                        >
-                          <ShoppingBag size={16} /> Purchases
+                          <ShoppingBag size={14} /> Purchases
                        </button>
                     </div>
 
@@ -1148,11 +1150,11 @@ export default function App() {
                        {customerModalTab === 'payments' ? (
                           customerHistory.length > 0 ? (
                              customerHistory.map((record) => (
-                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-4">
+                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                   <div className="flex items-center gap-3">
                                       {/* DIFFERENT ICON COLOR FOR REFUND */}
-                                      <div className={`p-3 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                        {record.type === 'Refund' ? <RefreshCcw size={18}/> : <Receipt size={18}/>}
+                                      <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                        {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
                                       </div>
                                       <div>
                                          <p className="font-bold text-sm">{record.type || 'Payment'}</p>
@@ -1165,16 +1167,16 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
+                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
                           )
                        ) : (
                           customerPurchases.length > 0 ? (
                              customerPurchases.map((item) => (
-                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-4">
-                                      <div className="p-3 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={18}/></div>
+                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                   <div className="flex items-center gap-3">
+                                      <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
                                       <div className="overflow-hidden">
-                                         <p className="font-bold text-sm truncate w-40 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
+                                         <p className="font-bold text-sm truncate w-32 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                       </div>
                                    </div>
@@ -1195,7 +1197,7 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
+                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
                           )
                        )}
                     </div>
