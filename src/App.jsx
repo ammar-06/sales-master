@@ -52,7 +52,9 @@ import {
   Wallet,
   History,
   Receipt,
-  ShoppingBag
+  ShoppingBag,
+  Undo2,
+  ShieldCheck
 } from 'lucide-react';
 
 // --- 🔴 FIREBASE CONFIG (Aapki Keys) ---
@@ -71,6 +73,8 @@ const auth = app ? getAuth(app) : null;
 const db = app ? getFirestore(app) : null;
 const appId = "ammar-shop-1";
 
+const ADMIN_ACCESS_CODE = "78601";
+
 // --- SOUND EFFECTS ---
 const playSound = (type) => {
   const soundUrls = {
@@ -82,10 +86,8 @@ const playSound = (type) => {
   try {
     const audio = new Audio(soundUrls[type]);
     audio.volume = 0.5;
-    audio.play().catch(() => {}); // Silent fail
-  } catch (e) {
-    // Ignore audio errors
-  }
+    audio.play().catch(() => {});
+  } catch (e) {}
 };
 
 // --- Helper Functions ---
@@ -106,7 +108,6 @@ const getFriendlyErrorMessage = (errorCode) => {
     case 'auth/wrong-password': return "Incorrect password.";
     case 'auth/email-already-in-use': return "Email already used.";
     case 'auth/weak-password': return "Password too short.";
-    case 'auth/too-many-requests': return "Too many attempts. Wait a bit.";
     default: return "Connection error. Please retry.";
   }
 };
@@ -141,15 +142,16 @@ const ToastContainer = ({ toasts, removeToast }) => (
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDanger, darkMode }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className={`p-6 rounded-2xl shadow-2xl w-full max-w-sm transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
+    // FIX: Changed z-index from 130 to 200 to ensure it overlays EVERYTHING
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      <div className={`p-6 rounded-2xl shadow-2xl w-[95%] max-w-sm transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
         <div className="flex flex-col items-center text-center">
           <div className={`p-4 rounded-full mb-4 ${isDanger ? (darkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-100 text-red-600') : (darkMode ? 'bg-blue-900/30 text-blue-500' : 'bg-blue-100 text-blue-600')}`}>
-            {isDanger ? <Trash2 size={32} /> : <LogOut size={32} />}
+            {isDanger ? <Trash2 size={32} /> : <Undo2 size={32} />}
           </div>
           <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{title}</h3>
           <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{message}</p>
-          <div className="flex gap-3 w-full">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <button onClick={onClose} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Cancel</button>
             <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg transition-all active:scale-95 ${isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{isDanger ? 'Confirm' : 'Proceed'}</button>
           </div>
@@ -161,12 +163,12 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
 
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
   <div className={`p-5 rounded-2xl shadow-sm border flex items-start justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-    <div>
+    <div className="flex-1 min-w-0">
       <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
-      <h3 className={`text-xl md:text-2xl font-black ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+      <h3 className={`text-lg md:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
+      {subtext && <p className={`text-[10px] md:text-xs mt-1 truncate ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
     </div>
-    <div className={`p-3 rounded-xl shadow-sm ${colorClass}`}><Icon size={22} /></div>
+    <div className={`p-3 rounded-xl shadow-sm ${colorClass} shrink-0 ml-2`}><Icon size={22} /></div>
   </div>
 );
 
@@ -183,6 +185,7 @@ export default function App() {
   const [isLoginView, setIsLoginView] = useState(true);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [authCode, setAuthCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Theme & Data
@@ -214,7 +217,7 @@ export default function App() {
   const [paymentCustomerSearch, setPaymentCustomerSearch] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
 
-  // New Sale Selection State (For Smart Search in Sales Tab)
+  // Sale Selection State
   const [showSaleCustomerSuggestions, setShowSaleCustomerSuggestions] = useState(false);
 
   // Forms
@@ -224,7 +227,7 @@ export default function App() {
 
   // Refs
   const inventorySearchInput = useRef(null);
-  const idsInputRef = useRef(null); // Ref for auto-resizing textarea
+  const idsInputRef = useRef(null); 
 
   // Effects
   useEffect(() => { document.title = "Sales Master"; }, []);
@@ -263,7 +266,6 @@ export default function App() {
     return () => { unsubInv(); unsubCust(); unsubSales(); unsubPayments(); };
   }, [user]);
 
-  // Auto-resize effect for IDs textarea
   useEffect(() => {
     if (idsInputRef.current) {
       idsInputRef.current.style.height = 'auto';
@@ -289,20 +291,56 @@ export default function App() {
     setModalConfig({ isOpen: true, type: type === 'inventory' ? 'DELETE_INVENTORY' : 'DELETE_CUSTOMER', id, title: 'Confirm Deletion', message: 'This action cannot be undone.', isDanger: true });
   };
 
+  const openReturnModal = (saleItem) => {
+    playSound('pop');
+    setModalConfig({ 
+        isOpen: true, 
+        type: 'RETURN_ITEM', 
+        id: saleItem.id, 
+        title: 'Return Item?', 
+        message: `Return ${saleItem.suitId}? Inventory and Customer Bill will be restored.`, 
+        isDanger: true,
+        extraData: saleItem 
+    });
+  };
+
   const handleConfirmAction = async () => {
-    const { type, id } = modalConfig;
+    const { type, id, extraData } = modalConfig;
     try {
       if (type === 'LOGOUT') {
         await signOut(auth);
         setInventory([]); setSales([]); setCustomers([]); setPayments([]);
         showToast("Logged out successfully");
+      } else if (type === 'RETURN_ITEM') {
+        await runTransaction(db, async (t) => {
+            const userRef = `artifacts/${appId}/users/${user.uid}`;
+            const saleRef = doc(db, `${userRef}/sales`, id);
+            const invRef = doc(db, `${userRef}/inventory`, extraData.dressDocId);
+            const custRef = doc(db, `${userRef}/customers`, extraData.customerId);
+            
+            const custSnap = await t.get(custRef);
+            if (!custSnap.exists()) throw new Error("Customer not found!");
+            
+            const currentBill = custSnap.data().totalBill || 0;
+            const newBill = Math.max(0, currentBill - extraData.salePrice);
+
+            t.update(invRef, { qty: 1 });
+            t.update(custRef, { totalBill: newBill, lastUpdated: serverTimestamp() });
+            t.delete(saleRef);
+        });
+        showToast("Item Returned & Stock Restored");
+        playSound('delete');
+
       } else {
         const path = type === 'DELETE_INVENTORY' ? 'inventory' : 'customers';
         await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/${path}`, id));
         showToast("Item Removed");
         playSound('delete');
       }
-    } catch (error) { showToast("Action Failed", 'error'); }
+    } catch (error) { 
+        console.error(error);
+        showToast("Action Failed", 'error'); 
+    }
     finally { setModalConfig({ ...modalConfig, isOpen: false }); }
   };
 
@@ -310,6 +348,13 @@ export default function App() {
     e.preventDefault();
     const email = authEmail.trim(); const password = authPassword;
     if (!email || !password) { showToast("Email and Password are required", 'error'); return; }
+    
+    if (!isLoginView && authCode !== ADMIN_ACCESS_CODE) {
+        showToast("Invalid Admin Access Code!", 'error');
+        playSound('error');
+        return;
+    }
+
     setIsSubmitting(true);
     try {
       if (isLoginView) { await signInWithEmailAndPassword(auth, email, password); showToast("Welcome back!"); }
@@ -601,8 +646,7 @@ export default function App() {
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white/80 border border-white'}`}>
           <div className="text-center mb-8">
-            {/* Updated to Shirt Icon */}
-            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Shirt size={40}/></div>
+            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Package size={40}/></div>
             <h1 className="text-4xl font-black tracking-tighter mb-2 text-blue-600">Sales Master</h1>
             <p className="text-xs font-bold uppercase opacity-50 tracking-widest">Retail Management System</p>
           </div>
@@ -638,9 +682,9 @@ export default function App() {
       
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
-           <Shirt className="text-blue-500"/>
-           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.1</p></div>
-           <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
+           <Package className="text-blue-500"/>
+           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v2.0 Enterprise</p></div>
+           <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto"><X/></button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}].map(i => (
@@ -650,8 +694,8 @@ export default function App() {
            ))}
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-2">
-           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-colors">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} Mode</button>
-           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-900/20 text-red-500 text-xs font-bold hover:bg-red-900/30 transition-colors"><LogOut size={14}/> Logout</button>
+           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} Mode</button>
+           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-900/20 text-red-500 text-xs font-bold"><LogOut size={14}/> Logout</button>
         </div>
       </div>
 
@@ -1011,7 +1055,7 @@ export default function App() {
 
          {/* CUSTOMER HISTORY MODAL */}
          {viewingCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1086,7 +1130,20 @@ export default function App() {
                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                       </div>
                                    </div>
-                                   <span className="font-bold text-purple-500">{formatCurrency(item.salePrice)}</span>
+                                   <div className="flex items-center gap-2">
+                                       <span className="font-bold text-purple-500">{formatCurrency(item.salePrice)}</span>
+                                       {/* RETURN BUTTON */}
+                                       <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openReturnModal(item);
+                                        }}
+                                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-full transition-colors"
+                                        title="Return Item"
+                                      >
+                                        <Undo2 size={16}/>
+                                      </button>
+                                   </div>
                                 </div>
                              ))
                           ) : (
