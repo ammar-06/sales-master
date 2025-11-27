@@ -54,7 +54,8 @@ import {
   Receipt,
   ShoppingBag,
   Undo2,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCcw // Added Icon for Refund
 } from 'lucide-react';
 
 // --- 🔴 FIREBASE CONFIG (Aapki Keys) ---
@@ -142,7 +143,6 @@ const ToastContainer = ({ toasts, removeToast }) => (
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDanger, darkMode }) => {
   if (!isOpen) return null;
   return (
-    // FIX: Changed z-index from 130 to 200 to ensure it overlays EVERYTHING
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className={`p-6 rounded-2xl shadow-2xl w-[95%] max-w-sm transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
         <div className="flex flex-col items-center text-center">
@@ -574,6 +574,39 @@ export default function App() {
         showToast("Payment Recorded!"); playSound('success');
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
+
+  // NEW: Handle Refund Action
+  const handleRefund = async (e) => {
+      e.preventDefault();
+      if (!user) return;
+      const cust = customers.find(c => c.id === paymentForm.customerId);
+      
+      if (!cust) { showToast("Select a customer first", 'error'); return; }
+      
+      const amountToRefund = Number(paymentForm.amount);
+
+      if (!amountToRefund || amountToRefund <= 0) { showToast("Amount must be positive", 'error'); return; }
+      
+      try {
+        // Reduce totalPaid
+        const newPaid = Math.max(0, (cust.totalPaid || 0) - amountToRefund);
+
+        await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, paymentForm.customerId), {
+          totalPaid: newPaid
+        });
+        
+        await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/payments`), {
+            customerId: paymentForm.customerId,
+            amount: amountToRefund,
+            date: serverTimestamp(),
+            type: 'Refund' // Mark as Refund
+        });
+
+        setPaymentForm({ customerId: '', amount: '' }); 
+        setPaymentCustomerSearch(''); 
+        showToast("Refund Processed!"); playSound('delete'); // Different sound for refund
+      } catch (err) { showToast("Error processing refund", 'error'); }
+  };
  
   const handleMarkMamaPaid = async (status) => {
       try {
@@ -646,7 +679,8 @@ export default function App() {
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white/80 border border-white'}`}>
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Package size={40}/></div>
+            {/* Updated to Shirt Icon */}
+            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Shirt size={40}/></div>
             <h1 className="text-4xl font-black tracking-tighter mb-2 text-blue-600">Sales Master</h1>
             <p className="text-xs font-bold uppercase opacity-50 tracking-widest">Retail Management System</p>
           </div>
@@ -660,6 +694,13 @@ export default function App() {
                <input type={showPassword?"text":"password"} required className="bg-transparent outline-none flex-1 text-sm" placeholder="Password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
                <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={18} className="opacity-50"/></button>
             </div>
+            {!isLoginView && (
+                <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                    <ShieldCheck size={18} className="opacity-50 mr-3 text-red-500" />
+                    <input type="text" required className="bg-transparent outline-none flex-1 text-sm" placeholder="Admin Access Code" value={authCode} onChange={e => setAuthCode(e.target.value)} />
+                </div>
+            )}
+
             <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 transition-transform active:scale-95">
                {isSubmitting ? <Loader2 className="animate-spin mx-auto"/> : (isLoginView ? "Login" : "Sign Up")}
             </button>
@@ -682,9 +723,9 @@ export default function App() {
       
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
-           <Package className="text-blue-500"/>
-           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v2.0 Enterprise</p></div>
-           <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto"><X/></button>
+           <Shirt className="text-blue-500"/>
+           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.2 Pro</p></div>
+           <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}].map(i => (
@@ -694,8 +735,8 @@ export default function App() {
            ))}
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-2">
-           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} Mode</button>
-           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-900/20 text-red-500 text-xs font-bold"><LogOut size={14}/> Logout</button>
+           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-colors">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} Mode</button>
+           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-900/20 text-red-500 text-xs font-bold hover:bg-red-900/30 transition-colors"><LogOut size={14}/> Logout</button>
         </div>
       </div>
 
@@ -924,6 +965,8 @@ export default function App() {
                         
                         <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} placeholder="Amount" className={`p-3 rounded-xl bg-transparent border w-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-200'}`} value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm, amount:e.target.value})}/>
                         <button onClick={handleAddPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95">Add</button>
+                        {/* ADDED REFUND BUTTON */}
+                        <button onClick={handleRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95" title="Refund Amount"><RefreshCcw size={20}/></button>
                      </div>
                   </div>
                </div>
@@ -934,7 +977,7 @@ export default function App() {
                         const bal = (c.totalBill||0)-(c.totalPaid||0);
                         return (
                            <div key={c.id} onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className={`p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-100 hover:border-blue-200'}`}>
-                              <div className="flex justify-between mb-3"><h4 className={`font-bold text-lg ${darkMode?'text-white':'text-slate-800'}`}>{c.name}</h4><span className="text-xs bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full font-bold">{formatCurrency(c.totalBill||0)}</span></div>
+                              <div className="flex justify-between mb-3"><h4 className={`font-bold text-lg truncate ${darkMode?'text-white':'text-slate-800'}`}>{c.name}</h4><span className="text-xs bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full font-bold">{formatCurrency(c.totalBill||0)}</span></div>
                               <div className="text-sm space-y-2 opacity-80"><div className="flex justify-between"><span>Rem:</span><b>{formatCurrency(bal)}</b></div><div className="flex justify-between"><span>Paid:</span><b className="text-green-500">{formatCurrency(c.totalPaid||0)}</b></div></div>
                               <div className={`h-px my-3 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}></div>
                               <div className="flex justify-between items-center text-xs opacity-60">
@@ -1055,7 +1098,7 @@ export default function App() {
 
          {/* CUSTOMER HISTORY MODAL */}
          {viewingCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1107,13 +1150,18 @@ export default function App() {
                              customerHistory.map((record) => (
                                 <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                    <div className="flex items-center gap-4">
-                                      <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-500"><Receipt size={18}/></div>
+                                      {/* DIFFERENT ICON COLOR FOR REFUND */}
+                                      <div className={`p-3 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                        {record.type === 'Refund' ? <RefreshCcw size={18}/> : <Receipt size={18}/>}
+                                      </div>
                                       <div>
                                          <p className="font-bold text-sm">{record.type || 'Payment'}</p>
                                          <p className="text-xs opacity-50">{record.date ? new Date(record.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                       </div>
                                    </div>
-                                   <span className="font-bold text-emerald-500">+{formatCurrency(record.amount)}</span>
+                                   <span className={`font-bold ${record.type === 'Refund' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                    {record.type === 'Refund' ? '-' : '+'}{formatCurrency(record.amount)}
+                                   </span>
                                 </div>
                              ))
                           ) : (
