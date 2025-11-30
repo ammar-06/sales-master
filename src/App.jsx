@@ -161,17 +161,14 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
-// FIXED CARD COMPONENT: Removed truncate, added break-words, adjusted font size
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
-  <div className={`p-4 md:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-    <div className="flex justify-between items-start mb-2">
-       <div className={`p-2.5 rounded-xl shadow-sm ${colorClass}`}><Icon size={20} /></div>
-       <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
+  <div className={`p-5 rounded-2xl shadow-sm border flex items-start justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+    <div className="flex-1 min-w-0">
+      <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
+      <h3 className={`text-lg md:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
+      {subtext && <p className={`text-[10px] md:text-xs mt-1 truncate ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
     </div>
-    <div>
-      <h3 className={`text-base sm:text-lg md:text-2xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
-    </div>
+    <div className={`p-3 rounded-xl shadow-sm ${colorClass} shrink-0 ml-2`}><Icon size={22} /></div>
   </div>
 );
 
@@ -527,6 +524,7 @@ export default function App() {
     } catch (err) { showToast(err.message, 'error'); playSound('error'); } finally { setIsSubmitting(false); }
   };
 
+  // New helper for Payment Customer Selection
   const paymentCustomerMatches = useMemo(() => {
     if (!paymentCustomerSearch) return [];
     const lower = paymentCustomerSearch.toLowerCase();
@@ -539,6 +537,7 @@ export default function App() {
     setShowCustomerSuggestions(false);
   };
 
+  // New helper for Sale Customer Selection
   const saleCustomerMatches = useMemo(() => {
     if (!saleForm.customerName) return [];
     const lower = saleForm.customerName.toLowerCase();
@@ -571,7 +570,7 @@ export default function App() {
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
-        setPaymentCustomerSearch(''); 
+        setPaymentCustomerSearch(''); // Clear search
         showToast("Payment Recorded!"); playSound('success');
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
@@ -589,6 +588,7 @@ export default function App() {
       if (!amountToRefund || amountToRefund <= 0) { showToast("Amount must be positive", 'error'); return; }
       
       try {
+        // Reduce totalPaid
         const newPaid = Math.max(0, (cust.totalPaid || 0) - amountToRefund);
 
         await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, paymentForm.customerId), {
@@ -599,12 +599,12 @@ export default function App() {
             customerId: paymentForm.customerId,
             amount: amountToRefund,
             date: serverTimestamp(),
-            type: 'Refund'
+            type: 'Refund' // Mark as Refund
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
         setPaymentCustomerSearch(''); 
-        showToast("Refund Processed!"); playSound('delete');
+        showToast("Refund Processed!"); playSound('delete'); // Different sound for refund
       } catch (err) { showToast("Error processing refund", 'error'); }
   };
  
@@ -670,6 +670,14 @@ export default function App() {
       return sales.filter(s => s.customerId === viewingCustomer.id);
   }, [sales, viewingCustomer]);
 
+  // --- NEW SORTING LOGIC FOR PARTNER SHARE ---
+  const sortedPendingMamaSales = useMemo(() => {
+    // Sort ONLY for the pending list view
+    return sales
+      .filter(s => !s.mamaPaid)
+      .sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [sales]);
+
   if (authLoading) return <div className={`h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}><LoadingSpinner /></div>;
 
   // LOGIN SCREEN
@@ -724,7 +732,7 @@ export default function App() {
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
            <Shirt className="text-blue-500"/>
-           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.2 Pro</p></div>
+           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.3</p></div>
            <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -998,7 +1006,7 @@ export default function App() {
          {/* MAMA (Renamed to PARTNER SHARE in UI) */}
          {activeTab === 'mama' && (
             <div className="space-y-6 h-full flex flex-col animate-fade-in">
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
+               <div className="grid grid-cols-3 gap-4 shrink-0">
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Total</p><p className="text-xl font-black text-blue-500">{formatCurrency(stats.mamaTotal)}</p></div>
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Pending</p><p className="text-xl font-black text-rose-500">{formatCurrency(stats.mamaPending)}</p></div>
                   <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Paid</p><p className="text-xl font-black text-emerald-500">{formatCurrency(stats.mamaPaid)}</p></div>
@@ -1047,11 +1055,12 @@ export default function App() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200/10">
+                           {/* MODIFIED MAPPING: Now uses sortedPendingMamaSales for 'pending' view */}
                            {mamaTab === 'pending' ? (
-                              sales.filter(s => !s.mamaPaid).length === 0 ? (
+                              sortedPendingMamaSales.length === 0 ? (
                                 <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No pending payments</td></tr>
                               ) : (
-                                sales.filter(s => !s.mamaPaid).map(s => (
+                                sortedPendingMamaSales.map(s => (
                                    <tr key={s.id} className={`cursor-pointer transition-colors ${selectedMamaSales.includes(s.id) ? 'bg-rose-500/10' : (darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50')}`} onClick={() => toggleMamaSelection(s.id)}>
                                       <td className="p-4 text-center"><input type="checkbox" checked={selectedMamaSales.includes(s.id)} readOnly className="w-4 h-4 accent-rose-500 pointer-events-none"/></td>
                                       <td className="truncate font-medium">{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
@@ -1100,7 +1109,7 @@ export default function App() {
 
          {/* CUSTOMER HISTORY MODAL */}
          {viewingCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1114,34 +1123,34 @@ export default function App() {
                  {/* Modal Content */}
                  <div className="flex-1 overflow-y-auto p-6">
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-3 gap-3 mb-6">
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
-                          <p className="text-lg font-bold text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
+                    <div className="grid grid-cols-3 gap-3 mb-8">
+                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Total Bill</p>
+                          <p className="text-lg font-black text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
                        </div>
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
-                          <p className="text-lg font-bold text-green-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
+                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Paid</p>
+                          <p className="text-lg font-black text-emerald-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
                        </div>
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
-                          <p className="text-lg font-bold text-red-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
+                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Balance</p>
+                          <p className="text-lg font-black text-rose-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
 
                     {/* Tabs for History */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-3 mb-6 p-1 bg-gray-100/50 dark:bg-slate-800/50 rounded-xl">
                        <button 
                           onClick={() => setCustomerModalTab('payments')}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'payments' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
                        >
-                          <Receipt size={14} /> Payments
+                          <Receipt size={16} /> Payments
                        </button>
                        <button 
                           onClick={() => setCustomerModalTab('purchases')}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'purchases' ? 'bg-white dark:bg-slate-700 shadow-sm text-purple-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
                        >
-                          <ShoppingBag size={14} /> Purchases
+                          <ShoppingBag size={16} /> Purchases
                        </button>
                     </div>
 
@@ -1150,11 +1159,10 @@ export default function App() {
                        {customerModalTab === 'payments' ? (
                           customerHistory.length > 0 ? (
                              customerHistory.map((record) => (
-                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                   <div className="flex items-center gap-3">
-                                      {/* DIFFERENT ICON COLOR FOR REFUND */}
-                                      <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                        {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
+                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                   <div className="flex items-center gap-4">
+                                      <div className={`p-3 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                        {record.type === 'Refund' ? <RefreshCcw size={18}/> : <Receipt size={18}/>}
                                       </div>
                                       <div>
                                          <p className="font-bold text-sm">{record.type || 'Payment'}</p>
@@ -1167,16 +1175,16 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
+                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
                           )
                        ) : (
                           customerPurchases.length > 0 ? (
                              customerPurchases.map((item) => (
-                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                   <div className="flex items-center gap-3">
-                                      <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
+                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                   <div className="flex items-center gap-4">
+                                      <div className="p-3 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={18}/></div>
                                       <div className="overflow-hidden">
-                                         <p className="font-bold text-sm truncate w-32 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
+                                         <p className="font-bold text-sm truncate w-40 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                       </div>
                                    </div>
@@ -1197,7 +1205,7 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
+                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
                           )
                        )}
                     </div>
