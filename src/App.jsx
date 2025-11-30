@@ -678,6 +678,13 @@ export default function App() {
       .sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
   }, [sales]);
 
+  // ADDED: Sorting for Paid History as well
+  const sortedPaidMamaSales = useMemo(() => {
+    return sales
+      .filter(s => s.mamaPaid)
+      .sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [sales]);
+
   if (authLoading) return <div className={`h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}><LoadingSpinner /></div>;
 
   // LOGIN SCREEN
@@ -1069,10 +1076,11 @@ export default function App() {
                                 ))
                               )
                            ) : (
-                              sales.filter(s => s.mamaPaid).length === 0 ? (
+                              // UPDATED: Using sortedPaidMamaSales instead of raw filter
+                              sortedPaidMamaSales.length === 0 ? (
                                 <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No payment history</td></tr>
                               ) : (
-                                sales.filter(s => s.mamaPaid).map(s => (
+                                sortedPaidMamaSales.map(s => (
                                    <tr key={s.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
                                       <td className="p-4 truncate font-medium">{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
                                       <td className="text-center text-xs opacity-60">
