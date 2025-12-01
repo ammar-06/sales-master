@@ -161,14 +161,18 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
+// FIXED: Removed 'truncate' from h3 and allowed wrapping with 'break-words' and 'leading-tight'
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
-  <div className={`p-5 rounded-2xl shadow-sm border flex items-start justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-    <div className="flex-1 min-w-0">
-      <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
-      <h3 className={`text-lg md:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {subtext && <p className={`text-[10px] md:text-xs mt-1 truncate ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+  <div className={`p-4 md:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+    <div className="flex justify-between items-start mb-2">
+       <div className={`p-2.5 rounded-xl shadow-sm ${colorClass}`}><Icon size={20} /></div>
+       <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
     </div>
-    <div className={`p-3 rounded-xl shadow-sm ${colorClass} shrink-0 ml-2`}><Icon size={22} /></div>
+    <div>
+      {/* Removed truncate, added break-words to allow wrapping */}
+      <h3 className={`text-base sm:text-lg md:text-2xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
+      {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+    </div>
   </div>
 );
 
@@ -1153,34 +1157,34 @@ export default function App() {
                  {/* Modal Content */}
                  <div className="flex-1 overflow-y-auto p-6">
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-3 gap-3 mb-8">
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Total Bill</p>
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
                           <p className="text-lg font-black text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
                        </div>
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Paid</p>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
                           <p className="text-lg font-black text-emerald-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
                        </div>
-                       <div className={`p-4 rounded-2xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase tracking-wider">Balance</p>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
                           <p className="text-lg font-black text-rose-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
 
                     {/* Tabs for History */}
-                    <div className="flex gap-3 mb-6 p-1 bg-gray-100/50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex gap-2 mb-4">
                        <button 
                           onClick={() => setCustomerModalTab('payments')}
-                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'payments' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
                        >
-                          <Receipt size={16} /> Payments
+                          <Receipt size={14} /> Payments
                        </button>
                        <button 
                           onClick={() => setCustomerModalTab('purchases')}
-                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all duration-200 ${customerModalTab === 'purchases' ? 'bg-white dark:bg-slate-700 shadow-sm text-purple-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
                        >
-                          <ShoppingBag size={16} /> Purchases
+                          <ShoppingBag size={14} /> Purchases
                        </button>
                     </div>
 
@@ -1189,11 +1193,11 @@ export default function App() {
                        {customerModalTab === 'payments' ? (
                           customerHistory.length > 0 ? (
                              customerHistory.map((record) => (
-                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-4">
+                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                   <div className="flex items-center gap-3">
                                       {/* DIFFERENT ICON COLOR FOR REFUND */}
-                                      <div className={`p-3 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                        {record.type === 'Refund' ? <RefreshCcw size={18}/> : <Receipt size={18}/>}
+                                      <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                        {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
                                       </div>
                                       <div>
                                          <p className="font-bold text-sm">{record.type || 'Payment'}</p>
@@ -1206,16 +1210,16 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
+                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
                           )
                        ) : (
                           customerPurchases.length > 0 ? (
                              customerPurchases.map((item) => (
-                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-4">
-                                      <div className="p-3 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={18}/></div>
+                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                   <div className="flex items-center gap-3">
+                                      <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
                                       <div className="overflow-hidden">
-                                         <p className="font-bold text-sm truncate w-40 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
+                                         <p className="font-bold text-sm truncate w-32 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                       </div>
                                    </div>
@@ -1236,7 +1240,7 @@ export default function App() {
                                 </div>
                              ))
                           ) : (
-                             <div className="text-center py-12 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
+                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
                           )
                        )}
                     </div>
