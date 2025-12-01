@@ -161,7 +161,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
-// FIXED: Removed 'truncate' from h3 and allowed wrapping with 'break-words' and 'leading-tight'
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
   <div className={`p-4 md:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
     <div className="flex justify-between items-start mb-2">
@@ -169,7 +168,6 @@ const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
        <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
     </div>
     <div>
-      {/* Removed truncate, added break-words to allow wrapping */}
       <h3 className={`text-base sm:text-lg md:text-2xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
       {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
     </div>
@@ -574,7 +572,7 @@ export default function App() {
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
-        setPaymentCustomerSearch(''); // Clear search
+        setPaymentCustomerSearch(''); 
         showToast("Payment Recorded!"); playSound('success');
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
