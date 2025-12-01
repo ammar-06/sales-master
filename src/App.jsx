@@ -210,6 +210,7 @@ export default function App() {
   
   const [viewingCustomer, setViewingCustomer] = useState(null);
   const [customerModalTab, setCustomerModalTab] = useState('payments');
+  const [modalAmount, setModalAmount] = useState(''); // NEW: Amount state for Modal
 
   // POS Cart State
   const [cart, setCart] = useState([]);
@@ -664,45 +665,98 @@ export default function App() {
     return customers
       .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()))
       .sort((a, b) => {
-        // Calculate balances
         const balA = (a.totalBill || 0) - (a.totalPaid || 0);
         const balB = (b.totalBill || 0) - (b.totalPaid || 0);
-        
-        // Determine if paid (close to 0)
         const isPaidA = balA <= 0;
         const isPaidB = balB <= 0;
 
-        // 1. Sort by Status: Unpaid first, Paid last
         if (isPaidA !== isPaidB) {
             return isPaidA ? 1 : -1; 
         }
-        
-        // 2. Sort by Name Ascending (A-Z)
         return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
       });
   }, [customers, customerSearch]);
 
   const filteredInventoryValue = useMemo(() => filteredInv.reduce((acc, item) => acc + (Number(item.orgPrice)||0), 0), [filteredInv]);
 
+  // --- MODAL ACTIONS ---
+  
+  const handleModalPayment = async () => {
+    if (!viewingCustomer || !modalAmount || Number(modalAmount) <= 0) return;
+    
+    const amountToAdd = Number(modalAmount);
+    const currentPaid = viewingCustomer.totalPaid || 0;
+    const pending = (viewingCustomer.totalBill || 0) - currentPaid;
+
+    if (amountToAdd > pending) { showToast(`Max payment allowed: Rs ${pending}`, 'error'); return; }
+
+    try {
+      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, viewingCustomer.id), {
+        totalPaid: currentPaid + amountToAdd, 
+        lastPaymentDate: serverTimestamp()
+      });
+      
+      await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/payments`), {
+          customerId: viewingCustomer.id,
+          amount: amountToAdd,
+          date: serverTimestamp(),
+          type: 'Payment'
+      });
+
+      setModalAmount('');
+      showToast("Payment Recorded!"); 
+      playSound('success');
+    } catch (err) { showToast("Error adding payment", 'error'); }
+  };
+
+  const handleModalRefund = async () => {
+    if (!viewingCustomer || !modalAmount || Number(modalAmount) <= 0) return;
+    
+    const amountToRefund = Number(modalAmount);
+    const currentPaid = viewingCustomer.totalPaid || 0;
+    
+    try {
+      const newPaid = Math.max(0, currentPaid - amountToRefund);
+
+      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, viewingCustomer.id), {
+        totalPaid: newPaid
+      });
+      
+      await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/payments`), {
+          customerId: viewingCustomer.id,
+          amount: amountToRefund,
+          date: serverTimestamp(),
+          type: 'Refund'
+      });
+
+      setModalAmount('');
+      showToast("Refund Processed!"); 
+      playSound('delete');
+    } catch (err) { showToast("Error processing refund", 'error'); }
+  };
+
+
+  const activeCustomer = useMemo(() => {
+      return customers.find(c => c.id === viewingCustomer?.id) || viewingCustomer;
+  }, [customers, viewingCustomer]);
+
   const customerHistory = useMemo(() => {
-      if (!viewingCustomer) return [];
-      return payments.filter(p => p.customerId === viewingCustomer.id);
-  }, [payments, viewingCustomer]);
+      if (!activeCustomer) return [];
+      return payments.filter(p => p.customerId === activeCustomer.id);
+  }, [payments, activeCustomer]);
 
   const customerPurchases = useMemo(() => {
-      if (!viewingCustomer) return [];
-      return sales.filter(s => s.customerId === viewingCustomer.id);
-  }, [sales, viewingCustomer]);
+      if (!activeCustomer) return [];
+      return sales.filter(s => s.customerId === activeCustomer.id);
+  }, [sales, activeCustomer]);
 
   // --- NEW SORTING LOGIC FOR PARTNER SHARE ---
   const sortedPendingMamaSales = useMemo(() => {
-    // Sort ONLY for the pending list view
     return sales
       .filter(s => !s.mamaPaid)
       .sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
   }, [sales]);
 
-  // ADDED: Sorting for Paid History as well
   const sortedPaidMamaSales = useMemo(() => {
     return sales
       .filter(s => s.mamaPaid)
@@ -718,7 +772,6 @@ export default function App() {
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white/80 border border-white'}`}>
           <div className="text-center mb-8">
-            {/* Updated to Shirt Icon */}
             <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Shirt size={40}/></div>
             <h1 className="text-4xl font-black tracking-tighter mb-2 text-blue-600">Sales Master</h1>
             <p className="text-xs font-bold uppercase opacity-50 tracking-widest">Retail Management System</p>
@@ -763,7 +816,7 @@ export default function App() {
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
            <Shirt className="text-blue-500"/>
-           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.3</p></div>
+           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.4 Pro</p></div>
            <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -1141,13 +1194,13 @@ export default function App() {
          )}
 
          {/* CUSTOMER HISTORY MODAL */}
-         {viewingCustomer && (
+         {activeCustomer && (
            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                     <div>
-                       <h2 className="text-2xl font-black flex items-center gap-2"><Users className="text-blue-500"/> {viewingCustomer.name}</h2>
+                       <h2 className="text-2xl font-black flex items-center gap-2"><Users className="text-blue-500"/> {activeCustomer.name}</h2>
                        <p className="text-xs opacity-50 font-bold uppercase tracking-wider mt-1">Customer Account History</p>
                     </div>
                     <button onClick={() => setViewingCustomer(null)} className="p-2 hover:bg-gray-500/10 rounded-full transition-colors"><X size={24}/></button>
@@ -1159,16 +1212,34 @@ export default function App() {
                     <div className="grid grid-cols-3 gap-3 mb-6">
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
-                          <p className="text-lg font-black text-blue-500">{formatCurrency(viewingCustomer.totalBill)}</p>
+                          <p className="text-lg font-black text-blue-500">{formatCurrency(activeCustomer.totalBill)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
-                          <p className="text-lg font-black text-emerald-500">{formatCurrency(viewingCustomer.totalPaid)}</p>
+                          <p className="text-lg font-black text-emerald-500">{formatCurrency(activeCustomer.totalPaid)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
-                          <p className="text-lg font-black text-rose-500">{formatCurrency((viewingCustomer.totalBill||0) - (viewingCustomer.totalPaid||0))}</p>
+                          <p className="text-lg font-black text-rose-500">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
                        </div>
+                    </div>
+                    
+                    {/* NEW: QUICK ACTION SECTION INSIDE MODAL */}
+                    <div className={`p-4 mb-6 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                      <label className="text-xs font-bold opacity-50 uppercase mb-2 block">Quick Actions</label>
+                      <div className="flex gap-2">
+                        <input 
+                          inputMode="numeric" 
+                          type="number" 
+                          onKeyDown={handleNumberInput} 
+                          placeholder="Amount" 
+                          className={`flex-1 p-2 rounded-lg bg-transparent border text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-300'}`} 
+                          value={modalAmount} 
+                          onChange={e=>setModalAmount(e.target.value)}
+                        />
+                        <button onClick={handleModalPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Pay</button>
+                        <button onClick={handleModalRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Refund</button>
+                      </div>
                     </div>
 
                     {/* Tabs for History */}
@@ -1192,7 +1263,7 @@ export default function App() {
                        {customerModalTab === 'payments' ? (
                           customerHistory.length > 0 ? (
                              customerHistory.map((record) => (
-                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                    <div className="flex items-center gap-3">
                                       {/* DIFFERENT ICON COLOR FOR REFUND */}
                                       <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
@@ -1214,7 +1285,7 @@ export default function App() {
                        ) : (
                           customerPurchases.length > 0 ? (
                              customerPurchases.map((item) => (
-                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                    <div className="flex items-center gap-3">
                                       <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
                                       <div className="overflow-hidden">
