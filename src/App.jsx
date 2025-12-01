@@ -944,7 +944,7 @@ export default function App() {
                               {saleCustomerMatches.map(c => (
                                  <div
                                     key={c.id}
-                                    onClick={() => {
+                                    onMouseDown={() => {
                                        setSaleForm({...saleForm, customerName: c.name});
                                        setShowSaleCustomerSuggestions(false);
                                     }}
@@ -992,7 +992,7 @@ export default function App() {
                                  {paymentCustomerMatches.map(c => (
                                     <div
                                        key={c.id}
-                                       onClick={() => selectPaymentCustomer(c)}
+                                       onMouseDown={() => selectPaymentCustomer(c)}
                                        className={`p-3 text-sm cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${darkMode ? 'border-slate-700' : 'border-slate-100'} border-b last:border-0`}
                                     >
                                        {c.name}
@@ -1013,6 +1013,7 @@ export default function App() {
                </div>
                
                <div className="flex-1 overflow-y-auto">
+                  {/* Customer List - Sorted by Payment Status */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4">
                      {filteredCust.map(c => {
                         const bal = (c.totalBill||0)-(c.totalPaid||0);
