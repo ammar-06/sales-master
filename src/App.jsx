@@ -121,6 +121,7 @@ const chunkArray = (array, size) => {
   return chunked;
 };
 
+// FIXED: Better Input Handler to block negative values
 const handleNumberInput = (e) => {
   if (['e', 'E', '+', '-'].includes(e.key)) {
     e.preventDefault();
@@ -210,7 +211,7 @@ export default function App() {
   
   const [viewingCustomer, setViewingCustomer] = useState(null);
   const [customerModalTab, setCustomerModalTab] = useState('payments');
-  const [modalAmount, setModalAmount] = useState(''); // NEW: Amount state for Modal
+  const [modalAmount, setModalAmount] = useState(''); 
 
   // POS Cart State
   const [cart, setCart] = useState([]);
@@ -527,7 +528,6 @@ export default function App() {
     } catch (err) { showToast(err.message, 'error'); playSound('error'); } finally { setIsSubmitting(false); }
   };
 
-  // New helper for Payment Customer Selection
   const paymentCustomerMatches = useMemo(() => {
     if (!paymentCustomerSearch) return [];
     const lower = paymentCustomerSearch.toLowerCase();
@@ -540,7 +540,6 @@ export default function App() {
     setShowCustomerSuggestions(false);
   };
 
-  // New helper for Sale Customer Selection
   const saleCustomerMatches = useMemo(() => {
     if (!saleForm.customerName) return [];
     const lower = saleForm.customerName.toLowerCase();
@@ -578,7 +577,6 @@ export default function App() {
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
 
-  // NEW: Handle Refund Action
   const handleRefund = async (e) => {
       e.preventDefault();
       if (!user) return;
@@ -591,7 +589,6 @@ export default function App() {
       if (!amountToRefund || amountToRefund <= 0) { showToast("Amount must be positive", 'error'); return; }
       
       try {
-        // Reduce totalPaid
         const newPaid = Math.max(0, (cust.totalPaid || 0) - amountToRefund);
 
         await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, paymentForm.customerId), {
@@ -602,12 +599,12 @@ export default function App() {
             customerId: paymentForm.customerId,
             amount: amountToRefund,
             date: serverTimestamp(),
-            type: 'Refund' // Mark as Refund
+            type: 'Refund'
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
         setPaymentCustomerSearch(''); 
-        showToast("Refund Processed!"); playSound('delete'); // Different sound for refund
+        showToast("Refund Processed!"); playSound('delete');
       } catch (err) { showToast("Error processing refund", 'error'); }
   };
  
@@ -660,7 +657,6 @@ export default function App() {
     return d.sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
   }, [inventory, inventorySearch, showAvailableOnly]);
 
-  // --- FIXED CUSTOMER SORTING LOGIC ---
   const filteredCust = useMemo(() => {
     return customers
       .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()))
@@ -679,25 +675,27 @@ export default function App() {
 
   const filteredInventoryValue = useMemo(() => filteredInv.reduce((acc, item) => acc + (Number(item.orgPrice)||0), 0), [filteredInv]);
 
-  // --- MODAL ACTIONS ---
-  
+  // FIXED: Modal Action Logic (Uses LIVE customer data from array)
   const handleModalPayment = async () => {
-    if (!viewingCustomer || !modalAmount || Number(modalAmount) <= 0) return;
+    // Use 'viewingCustomer.id' to find the LATEST data from 'customers' array
+    const liveCustomer = customers.find(c => c.id === viewingCustomer?.id);
+    
+    if (!liveCustomer || !modalAmount || Number(modalAmount) <= 0) return;
     
     const amountToAdd = Number(modalAmount);
-    const currentPaid = viewingCustomer.totalPaid || 0;
-    const pending = (viewingCustomer.totalBill || 0) - currentPaid;
+    const currentPaid = liveCustomer.totalPaid || 0;
+    const pending = (liveCustomer.totalBill || 0) - currentPaid;
 
     if (amountToAdd > pending) { showToast(`Max payment allowed: Rs ${pending}`, 'error'); return; }
 
     try {
-      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, viewingCustomer.id), {
+      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, liveCustomer.id), {
         totalPaid: currentPaid + amountToAdd, 
         lastPaymentDate: serverTimestamp()
       });
       
       await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/payments`), {
-          customerId: viewingCustomer.id,
+          customerId: liveCustomer.id,
           amount: amountToAdd,
           date: serverTimestamp(),
           type: 'Payment'
@@ -710,20 +708,26 @@ export default function App() {
   };
 
   const handleModalRefund = async () => {
-    if (!viewingCustomer || !modalAmount || Number(modalAmount) <= 0) return;
+    // Use 'viewingCustomer.id' to find the LATEST data from 'customers' array
+    const liveCustomer = customers.find(c => c.id === viewingCustomer?.id);
+
+    if (!liveCustomer || !modalAmount || Number(modalAmount) <= 0) return;
     
     const amountToRefund = Number(modalAmount);
-    const currentPaid = viewingCustomer.totalPaid || 0;
+    const currentPaid = liveCustomer.totalPaid || 0;
+    
+    // Validation: Can't refund more than paid
+    if (amountToRefund > currentPaid) { showToast("Cannot refund more than paid amount!", 'error'); return; }
     
     try {
       const newPaid = Math.max(0, currentPaid - amountToRefund);
 
-      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, viewingCustomer.id), {
+      await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, liveCustomer.id), {
         totalPaid: newPaid
       });
       
       await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/payments`), {
-          customerId: viewingCustomer.id,
+          customerId: liveCustomer.id,
           amount: amountToRefund,
           date: serverTimestamp(),
           type: 'Refund'
@@ -735,22 +739,11 @@ export default function App() {
     } catch (err) { showToast("Error processing refund", 'error'); }
   };
 
-
+  // Helper to get live customer data for display
   const activeCustomer = useMemo(() => {
       return customers.find(c => c.id === viewingCustomer?.id) || viewingCustomer;
   }, [customers, viewingCustomer]);
 
-  const customerHistory = useMemo(() => {
-      if (!activeCustomer) return [];
-      return payments.filter(p => p.customerId === activeCustomer.id);
-  }, [payments, activeCustomer]);
-
-  const customerPurchases = useMemo(() => {
-      if (!activeCustomer) return [];
-      return sales.filter(s => s.customerId === activeCustomer.id);
-  }, [sales, activeCustomer]);
-
-  // --- NEW SORTING LOGIC FOR PARTNER SHARE ---
   const sortedPendingMamaSales = useMemo(() => {
     return sales
       .filter(s => !s.mamaPaid)
@@ -772,7 +765,7 @@ export default function App() {
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white/80 border border-white'}`}>
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Shirt size={40}/></div>
+            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Package size={40}/></div>
             <h1 className="text-4xl font-black tracking-tighter mb-2 text-blue-600">Sales Master</h1>
             <p className="text-xs font-bold uppercase opacity-50 tracking-widest">Retail Management System</p>
           </div>
@@ -786,13 +779,6 @@ export default function App() {
                <input type={showPassword?"text":"password"} required className="bg-transparent outline-none flex-1 text-sm" placeholder="Password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
                <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={18} className="opacity-50"/></button>
             </div>
-            {!isLoginView && (
-                <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                    <ShieldCheck size={18} className="opacity-50 mr-3 text-red-500" />
-                    <input type="text" required className="bg-transparent outline-none flex-1 text-sm" placeholder="Admin Access Code" value={authCode} onChange={e => setAuthCode(e.target.value)} />
-                </div>
-            )}
-
             <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 transition-transform active:scale-95">
                {isSubmitting ? <Loader2 className="animate-spin mx-auto"/> : (isLoginView ? "Login" : "Sign Up")}
             </button>
@@ -815,7 +801,7 @@ export default function App() {
       
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
-           <Shirt className="text-blue-500"/>
+           <Package className="text-blue-500"/>
            <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.4 Pro</p></div>
            <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
         </div>
@@ -899,7 +885,7 @@ export default function App() {
                                    <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}>
                                       <td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className="truncate">{i.brand}</td><td className="text-right opacity-60">{i.orgPrice}</td><td className="text-right font-bold">{i.salePrice}</td>
                                       <td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td>
-                                      <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded"><Edit size={16}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded"><Trash2 size={16}/></button></>}</td>
+                                      <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-1 hover:bg-blue-500/10 rounded"><Edit size={14}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-1 hover:bg-red-500/10 rounded"><Trash2 size={14}/></button></>}</td>
                                    </tr>
                                 ))
                              )}
@@ -1224,13 +1210,14 @@ export default function App() {
                        </div>
                     </div>
                     
-                    {/* NEW: QUICK ACTION SECTION INSIDE MODAL */}
+                    {/* NEW: QUICK ACTION SECTION INSIDE MODAL (FIXED LOGIC) */}
                     <div className={`p-4 mb-6 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                       <label className="text-xs font-bold opacity-50 uppercase mb-2 block">Quick Actions</label>
                       <div className="flex gap-2">
                         <input 
                           inputMode="numeric" 
                           type="number" 
+                          min="0"
                           onKeyDown={handleNumberInput} 
                           placeholder="Amount" 
                           className={`flex-1 p-2 rounded-lg bg-transparent border text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-300'}`} 
