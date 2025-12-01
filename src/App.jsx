@@ -657,7 +657,29 @@ export default function App() {
     return d.sort((a, b) => a.suitId.localeCompare(b.suitId, undefined, { numeric: true, sensitivity: 'base' }));
   }, [inventory, inventorySearch, showAvailableOnly]);
 
-  const filteredCust = useMemo(() => customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).sort((a, b) => ((b.totalBill||0)-(b.totalPaid||0)) - ((a.totalBill||0)-(a.totalPaid||0))), [customers, customerSearch]);
+  // --- FIXED CUSTOMER SORTING LOGIC ---
+  const filteredCust = useMemo(() => {
+    return customers
+      .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()))
+      .sort((a, b) => {
+        // Calculate balances
+        const balA = (a.totalBill || 0) - (a.totalPaid || 0);
+        const balB = (b.totalBill || 0) - (b.totalPaid || 0);
+        
+        // Determine if paid (close to 0)
+        const isPaidA = balA <= 0;
+        const isPaidB = balB <= 0;
+
+        // 1. Sort by Status: Unpaid first, Paid last
+        if (isPaidA !== isPaidB) {
+            return isPaidA ? 1 : -1; 
+        }
+        
+        // 2. Sort by Name Ascending (A-Z)
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      });
+  }, [customers, customerSearch]);
+
   const filteredInventoryValue = useMemo(() => filteredInv.reduce((acc, item) => acc + (Number(item.orgPrice)||0), 0), [filteredInv]);
 
   const customerHistory = useMemo(() => {
@@ -947,7 +969,7 @@ export default function App() {
                <div className={`shrink-0 p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
                   <div className="flex-1 w-full">
                      <h3 className="font-bold mb-3 text-lg flex items-center gap-2"><Wallet size={20} className="text-blue-500"/> Quick Payment</h3>
-                     <div className="flex flex-col sm:flex-row gap-3 items-start w-full">
+                     <div className="flex gap-3 items-start">
                         {/* SMART SEARCHABLE INPUT (REPLACES OLD SELECT) */}
                         <div className="relative flex-1 w-full">
                            <input
@@ -1117,7 +1139,7 @@ export default function App() {
 
          {/* CUSTOMER HISTORY MODAL */}
          {viewingCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4 animate-fade-in">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1169,6 +1191,7 @@ export default function App() {
                              customerHistory.map((record) => (
                                 <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                    <div className="flex items-center gap-4">
+                                      {/* DIFFERENT ICON COLOR FOR REFUND */}
                                       <div className={`p-3 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                                         {record.type === 'Refund' ? <RefreshCcw size={18}/> : <Receipt size={18}/>}
                                       </div>
