@@ -963,8 +963,8 @@ export default function App() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
            {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}, {id:'insights', icon:BarChart3, label:'Insights'}, {id:'trash', icon:Archive, label:'Deleted Customers'}].map(i => (
-             <button key={i.id} onClick={() => {setActiveTab(i.id); setViewingCustomer(null); setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
-               <i.icon size={20} /> <span className="capitalize font-medium">{i.label}</span>
+             <button key={i.id} onClick={() => {setActiveTab(i.id); setViewingCustomer(null); setMobileMenuOpen(false); setEditingItem(null);}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
+                <i.icon size={20} /> <span className="capitalize font-medium">{i.label}</span>
              </button>
            ))}
         </nav>
@@ -1045,7 +1045,6 @@ export default function App() {
                                               <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
                                               <span className="text-[10px] opacity-50 block">Cost: {i.orgPrice}</span>
                                           </div>
-                                          {/* FIX: Conditional rendering for sold/unsold actions */}
                                           {i.qty > 0 && (
                                               <div className="flex gap-1 relative z-10">
                                                   <button 
@@ -1348,8 +1347,8 @@ export default function App() {
                                      <div className="pt-1"><input type="checkbox" checked={selectedMamaSales.includes(s.id)} readOnly className="w-4 h-4 accent-rose-500"/></div>
                                      <div className="flex-1">
                                          <div className="flex justify-between">
-                                             <span className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId}</span>
-                                             <span className="text-sm font-bold text-rose-500">{s.mamaShare}</span>
+                                              <span className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId}</span>
+                                              <span className="text-sm font-bold text-rose-500">{s.mamaShare}</span>
                                          </div>
                                          <span className="text-xs opacity-50 block">{s.brand}</span>
                                      </div>
@@ -1452,8 +1451,9 @@ export default function App() {
 
          {/* Edit Modal - FIXED POSITIONING */}
          {editingItem && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 animate-fade-in overflow-y-auto">
-              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl relative ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
+           <div className="fixed inset-0 h-dvh bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 animate-fade-in">
+              {/* Notice I added max-h-full and overflow-y-auto to this inner div below */}
+              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl relative max-h-full overflow-y-auto ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
                  <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
                  <form onSubmit={handleUpdateItem} className="space-y-4">
                    <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
@@ -1486,15 +1486,15 @@ export default function App() {
                     <div className="grid grid-cols-3 gap-3 mb-6">
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Total Bill</p>
-                          <p className="text-base sm:text-lg font-black text-blue-500 break-words leading-tight">{formatCurrency(activeCustomer.totalBill)}</p>
+                          <p className="text-sm sm:text-lg font-black text-blue-500 whitespace-nowrap leading-tight">{formatCurrency(activeCustomer.totalBill)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Paid</p>
-                          <p className="text-base sm:text-lg font-black text-emerald-500 break-words leading-tight">{formatCurrency(activeCustomer.totalPaid)}</p>
+                          <p className="text-sm sm:text-lg font-black text-emerald-500 whitespace-nowrap leading-tight">{formatCurrency(activeCustomer.totalPaid)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Balance</p>
-                          <p className="text-base sm:text-lg font-black text-rose-500 break-words leading-tight">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
+                          <p className="text-sm sm:text-lg font-black text-rose-500 whitespace-nowrap leading-tight">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
                     
