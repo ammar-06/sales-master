@@ -948,7 +948,7 @@ export default function App() {
       )}
       
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
-        <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
+        <div onClick={() => { setActiveTab('dashboard'); setViewingCustomer(null); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
            <div className="bg-blue-600 p-2 rounded-lg"><Shirt className="text-white" size={20}/></div>
            <div>
                <h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1>
@@ -963,7 +963,7 @@ export default function App() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
            {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}, {id:'insights', icon:BarChart3, label:'Insights'}, {id:'trash', icon:Archive, label:'Deleted Customers'}].map(i => (
-             <button key={i.id} onClick={() => {setActiveTab(i.id); setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
+             <button key={i.id} onClick={() => {setActiveTab(i.id); setViewingCustomer(null); setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
                <i.icon size={20} /> <span className="capitalize font-medium">{i.label}</span>
              </button>
            ))}
@@ -1045,7 +1045,7 @@ export default function App() {
                                               <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
                                               <span className="text-[10px] opacity-50 block">Cost: {i.orgPrice}</span>
                                           </div>
-                                          {/* FIX: Buttons only show if QTY > 0 and are properly clickable */}
+                                          {/* FIX: Conditional rendering for sold/unsold actions */}
                                           {i.qty > 0 && (
                                               <div className="flex gap-1 relative z-10">
                                                   <button 
@@ -1069,7 +1069,7 @@ export default function App() {
                       </div>
 
                       <table className="hidden md:table w-full text-left text-sm table-fixed">
-                         <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'}`}>
+                         <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}>
                            <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
                          </thead>
                          <tbody className="divide-y divide-slate-200/10">
@@ -1239,7 +1239,6 @@ export default function App() {
                            <div 
                               key={c.id} 
                               className={`relative p-3 sm:p-5 rounded-2xl border shadow-sm h-fit transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}
-                              /* FIX: PARENT CLICK FOR WHOLE CARD */
                               onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} 
                            >
                               <div className="flex justify-between items-start mb-2 sm:mb-3">
@@ -1263,7 +1262,6 @@ export default function App() {
                                   </div>
                               </div>
                               
-                              {/* FIX: Explicit View button for clarity */}
                               <div className="mt-3 flex gap-2 relative z-10">
                                   <button className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
                                       View Details
@@ -1452,10 +1450,10 @@ export default function App() {
              </div>
          )}
 
-         {/* Edit Modal */}
+         {/* Edit Modal - FIXED POSITIONING */}
          {editingItem && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 transition-opacity animate-fade-in">
-              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all scale-100 ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 animate-fade-in overflow-y-auto">
+              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl relative ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
                  <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
                  <form onSubmit={handleUpdateItem} className="space-y-4">
                    <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
@@ -1469,9 +1467,9 @@ export default function App() {
            </div>
          )}
 
-         {/* CUSTOMER HISTORY MODAL */}
+         {/* CUSTOMER HISTORY MODAL - FIXED TEXT OVERFLOW */}
          {activeCustomer && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4 animate-fade-in">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4 animate-fade-in overflow-hidden">
               <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -1484,19 +1482,19 @@ export default function App() {
                  
                  {/* Modal Content */}
                  <div className="flex-1 overflow-y-auto p-6">
-                    {/* Stats Cards */}
+                    {/* Stats Cards - FIXED OVERFLOW */}
                     <div className="grid grid-cols-3 gap-3 mb-6">
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
-                          <p className="text-lg font-black text-blue-500">{formatCurrency(activeCustomer.totalBill)}</p>
+                          <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Total Bill</p>
+                          <p className="text-base sm:text-lg font-black text-blue-500 break-words leading-tight">{formatCurrency(activeCustomer.totalBill)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
-                          <p className="text-lg font-black text-emerald-500">{formatCurrency(activeCustomer.totalPaid)}</p>
+                          <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Paid</p>
+                          <p className="text-base sm:text-lg font-black text-emerald-500 break-words leading-tight">{formatCurrency(activeCustomer.totalPaid)}</p>
                        </div>
                        <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                          <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
-                          <p className="text-lg font-black text-rose-500">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
+                          <p className="text-[10px] font-bold opacity-50 uppercase mb-1">Balance</p>
+                          <p className="text-base sm:text-lg font-black text-rose-500 break-words leading-tight">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
                     
