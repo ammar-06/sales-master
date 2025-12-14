@@ -169,18 +169,19 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
-// PROFESSIONAL CARD COMPONENT
+// RESPONSIVE CARD COMPONENT (Fix for Dashboard Numbers)
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode, iconBgClass, iconTextClass }) => (
-  <div className={`p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-xl active:scale-95 cursor-default h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-    <div className="flex justify-between items-start mb-4">
-       <div className={`p-3 rounded-xl shadow-sm ${darkMode ? colorClass : iconBgClass}`}>
-          <Icon size={22} className={darkMode ? 'text-white' : iconTextClass} />
+  <div className={`p-4 sm:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-xl active:scale-95 cursor-default h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <div className="flex justify-between items-start mb-3 sm:mb-4">
+       <div className={`p-2 sm:p-3 rounded-xl shadow-sm ${darkMode ? colorClass : iconBgClass}`}>
+          <Icon size={20} className={`${darkMode ? 'text-white' : iconTextClass}`} />
        </div>
     </div>
     <div>
-       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>{title}</p>
-       <h3 className={`text-2xl sm:text-3xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
-       {subtext && <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>{subtext}</p>}
+       <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>{title}</p>
+       {/* FIX: Reduced mobile font size to avoid overflow on 6 digits */}
+       <h3 className={`text-xl sm:text-3xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
+       {subtext && <p className={`text-[10px] sm:text-xs mt-2 font-medium ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>{subtext}</p>}
     </div>
   </div>
 );
@@ -258,7 +259,7 @@ export default function App() {
       .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
 
       /* Custom Scrollbar for a cleaner look */
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
       .dark ::-webkit-scrollbar-thumb { background: #334155; }
@@ -980,7 +981,6 @@ export default function App() {
            <div className="bg-blue-600 p-2 rounded-lg"><Shirt className="text-white" size={20}/></div>
            <div>
                <h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1>
-               {/* RESPONSIVE NAME FIX: md: classes added */}
                <div className="flex items-center gap-2 mt-1">
                    <UserCircle size={12} className="text-slate-400"/>
                    <p className="text-[10px] md:text-xs md:text-white md:font-bold text-slate-300 font-mono uppercase tracking-wide">
@@ -1017,8 +1017,8 @@ export default function App() {
          {/* DASHBOARD */}
          {activeTab === 'dashboard' && (
            <div className="space-y-6">
-             <div className="grid grid-cols-2 md:grid-cols-5 gap-4"> 
-                {/* Updated Cards: White bg in light mode with refined borders and icons */}
+             {/* FIX: Use sm:grid-cols-2 to force single column on very small phones if needed, or 2 cols on mobile */}
+             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4"> 
                 <Card darkMode={darkMode} title="Capital" value={formatCurrency(stats.capital)} icon={Layers} colorClass="bg-blue-600/20 text-blue-500" iconBgClass="bg-blue-50" iconTextClass="text-blue-600" />
                 <Card darkMode={darkMode} title="Profit" value={formatCurrency(stats.profit)} icon={TrendingUp} colorClass="bg-emerald-600/20 text-emerald-500" iconBgClass="bg-emerald-50" iconTextClass="text-emerald-600" />
                 <Card darkMode={darkMode} title="Pending" value={formatCurrency(stats.receivable)} icon={CreditCard} colorClass="bg-amber-600/20 text-amber-500" iconBgClass="bg-amber-50" iconTextClass="text-amber-600" />
@@ -1026,11 +1026,11 @@ export default function App() {
                 <Card darkMode={darkMode} title="Stock" value={formatCurrency(stats.stock)} icon={Package} colorClass="bg-purple-600/20 text-purple-500" iconBgClass="bg-purple-50" iconTextClass="text-purple-600" />
              </div>
              
-             <div className={`p-6 rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-                <h3 className={`font-bold mb-6 text-lg tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Sales</h3>
+             <div className={`p-4 sm:p-6 rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                <h3 className={`font-bold mb-4 sm:mb-6 text-lg tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Sales</h3>
                 <div className="space-y-2">
                    {sales.slice(0,5).map(s => (
-                     <div key={s.id} className={`flex justify-between items-center p-4 rounded-xl transition-all duration-200 ${darkMode?'bg-slate-700/30 hover:bg-slate-700/50':'bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100'}`}>
+                     <div key={s.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl transition-all duration-200 ${darkMode?'bg-slate-700/30 hover:bg-slate-700/50':'bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100'}`}>
                        <div><p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{s.customerName}</p><p className="text-xs opacity-50 font-mono">{s.suitId}</p></div>
                        <div className="text-right"><p className="font-bold text-emerald-500 text-sm">+{formatCurrency(s.salePrice)}</p></div>
                      </div>
@@ -1040,7 +1040,7 @@ export default function App() {
            </div>
          )}
 
-         {/* INVENTORY */}
+         {/* INVENTORY - FIXED RESPONSIVENESS (CARDS ON MOBILE) */}
          {activeTab === 'inventory' && (
            <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
              <div className={`p-6 rounded-2xl shadow-sm border h-fit w-full lg:w-80 shrink-0 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
@@ -1062,7 +1062,39 @@ export default function App() {
                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
                    
                    <div className="flex-1 overflow-auto">
-                      <table className="w-full text-left text-sm table-fixed min-w-[600px]">
+                      {/* MOBILE VIEW: CARD LIST */}
+                      <div className="md:hidden divide-y divide-slate-200/50">
+                          {filteredInv.length === 0 ? (
+                              <div className="p-8 text-center opacity-40 text-sm">No items found.</div>
+                          ) : (
+                              filteredInv.map(i => (
+                                  <div key={i.id} className={`p-4 flex flex-col gap-2 ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white'}`}>
+                                      <div className="flex justify-between items-start">
+                                          <div>
+                                              <span className="font-mono text-blue-500 font-bold block">{i.suitId}</span>
+                                              <span className={`text-sm ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</span>
+                                          </div>
+                                          <div className="text-right">
+                                              <span className={`block font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
+                                              <span className="text-xs opacity-50 block">Cost: {i.orgPrice}</span>
+                                          </div>
+                                      </div>
+                                      <div className="flex justify-between items-center mt-2">
+                                          {i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}
+                                          <div className="flex gap-2">
+                                              {i.qty>0 && <>
+                                                  <button onClick={()=>setEditingItem(i)} className="p-2 bg-blue-500/10 text-blue-500 rounded"><Edit size={14}/></button>
+                                                  <button onClick={()=>openDeleteModal(i.id, 'inventory')} className="p-2 bg-red-500/10 text-red-500 rounded"><Trash2 size={14}/></button>
+                                              </>}
+                                          </div>
+                                      </div>
+                                  </div>
+                              ))
+                          )}
+                      </div>
+
+                      {/* DESKTOP VIEW: TABLE */}
+                      <table className="hidden md:table w-full text-left text-sm table-fixed">
                          <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'}`}>
                            <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
                          </thead>
@@ -1189,7 +1221,7 @@ export default function App() {
             </div>
          )}
 
-         {/* CUSTOMERS */}
+         {/* CUSTOMERS - FIXED RESPONSIVENESS (1 COL Mobile, 3 Cols Desktop) */}
          {activeTab === 'customers' && (
             <div className="flex flex-col h-full overflow-hidden gap-6">
                <div className={`shrink-0 p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
@@ -1235,7 +1267,8 @@ export default function App() {
                </div>
                
                <div className="flex-1 overflow-y-auto">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4">
+                  {/* FIX: Changed grid-cols-1 to grid-cols-1 md:grid-cols-2 lg:grid-cols-3 for better fit */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
                      {filteredCust.map(c => {
                         const bal = (c.totalBill||0)-(c.totalPaid||0);
                         return (
@@ -1295,7 +1328,7 @@ export default function App() {
          )}
 
 
-         {/* MAMA (PARTNER SHARE) */}
+         {/* MAMA (PARTNER SHARE) - FIXED RESPONSIVENESS */}
          {activeTab === 'mama' && (
             <div className="space-y-6 h-full flex flex-col">
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
@@ -1329,8 +1362,37 @@ export default function App() {
                   </div>
 
                   <div className="flex-1 overflow-auto">
-                      {/* RESPONSIVE TABLE FIX: removed min-w constraint */}
-                      <table className="w-full text-left text-sm table-fixed">
+                      {/* RESPONSIVE: CARD VIEW ON MOBILE, TABLE ON DESKTOP */}
+                      <div className="md:hidden divide-y divide-slate-200/50">
+                          {mamaTab === 'pending' ? (
+                             sortedPendingMamaSales.length === 0 ? <div className="p-8 text-center opacity-40 text-sm">No pending payments</div> :
+                             sortedPendingMamaSales.map(s => (
+                                 <div key={s.id} onClick={() => toggleMamaSelection(s.id)} className={`p-4 flex gap-3 ${selectedMamaSales.includes(s.id) ? 'bg-rose-500/10' : ''}`}>
+                                     <div className="pt-1"><input type="checkbox" checked={selectedMamaSales.includes(s.id)} readOnly className="w-5 h-5 accent-rose-500"/></div>
+                                     <div className="flex-1">
+                                         <div className="flex justify-between">
+                                             <span className={`font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId}</span>
+                                             <span className="font-bold text-rose-500">{s.mamaShare}</span>
+                                         </div>
+                                         <span className="text-xs opacity-50 block">{s.brand}</span>
+                                     </div>
+                                 </div>
+                             ))
+                          ) : (
+                             sortedPaidMamaSales.length === 0 ? <div className="p-8 text-center opacity-40 text-sm">No history</div> :
+                             sortedPaidMamaSales.map(s => (
+                                 <div key={s.id} className="p-4 flex justify-between items-center">
+                                     <div>
+                                         <span className={`block font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId}</span>
+                                         <span className="text-xs opacity-50 block">{s.mamaPaidAt ? new Date(s.mamaPaidAt.seconds * 1000).toLocaleDateString() : '-'}</span>
+                                     </div>
+                                     <span className="font-bold text-emerald-500">{s.mamaShare}</span>
+                                 </div>
+                             ))
+                          )}
+                      </div>
+
+                      <table className="hidden md:table w-full text-left text-sm table-fixed">
                          <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}>
                            <tr>
                                {mamaTab === 'pending' && (
