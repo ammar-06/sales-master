@@ -981,7 +981,6 @@ export default function App() {
             <h2 className="font-bold uppercase tracking-wider text-sm text-slate-500">{activeTab === 'mama' ? "PARTNER SHARE" : activeTab}</h2><div className="w-8"></div>
          </div>
 
-         {/* FIX: Removed pb-24 padding bottom which caused scroll issues */}
          <div key={activeTab} className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth animate-fade-in">
 
          {/* DASHBOARD */}
@@ -1008,9 +1007,8 @@ export default function App() {
            </div>
          )}
 
-         {/* INVENTORY - FIXED HEIGHT ISSUE */}
+         {/* INVENTORY */}
          {activeTab === 'inventory' && (
-           /* FIX: Removed h-full from wrapper so mobile can scroll naturally */
            <div className="flex flex-col lg:flex-row gap-6 lg:h-full lg:overflow-hidden pb-20">
              <div className={`p-6 rounded-2xl shadow-sm border h-fit w-full lg:w-80 shrink-0 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
                 <h3 className={`font-bold mb-6 flex gap-2 items-center text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={20} className="text-blue-500"/> Add Stock</h3>
@@ -1025,14 +1023,12 @@ export default function App() {
                 </form>
              </div>
              
-             {/* FIX: Removed min-h-0 constraint for mobile */}
              <div className="flex-1 flex flex-col lg:overflow-hidden lg:min-h-0">
                 <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
                    <div className={`p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}><Search size={18} className="opacity-50"/><input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/></div>
                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
                    
                    <div className="flex-1 overflow-auto">
-                      {/* MOBILE VIEW: COMPACT CARD LIST */}
                       <div className="md:hidden p-2 grid grid-cols-2 gap-2">
                           {filteredInv.length === 0 ? (
                               <div className="col-span-2 p-8 text-center opacity-40 text-sm">No items found.</div>
@@ -1181,7 +1177,7 @@ export default function App() {
             </div>
          )}
 
-         {/* CUSTOMERS - FIXED RESPONSIVENESS (2 COL Mobile) */}
+         {/* CUSTOMERS - CLICKABLE + TOTAL VISIBLE */}
          {activeTab === 'customers' && (
             <div className="flex flex-col h-full overflow-hidden gap-6 pb-20">
                <div className={`shrink-0 p-4 sm:p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 sm:gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
@@ -1220,18 +1216,35 @@ export default function App() {
                </div>
                
                <div className="flex-1 overflow-y-auto">
-                  {/* FIX: grid-cols-2 for mobile with gap-2 */}
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                      {filteredCust.map(c => {
                         const bal = (c.totalBill||0)-(c.totalPaid||0);
                         return (
-                           <div key={c.id} onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className={`p-3 sm:p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}>
+                           <div 
+                              key={c.id} 
+                              onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} 
+                              className={`p-3 sm:p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}
+                           >
                               <div className="flex justify-between items-start mb-2 sm:mb-3">
                                   <h4 className={`font-bold text-sm sm:text-lg truncate w-full ${darkMode?'text-white':'text-gray-900'}`}>{c.name}</h4>
                               </div>
-                              <div className="text-[10px] sm:text-sm space-y-1.5 opacity-80">
-                                  <div className="flex justify-between"><span>Rem:</span><b>{formatCurrency(bal)}</b></div>
-                                  <div className="flex justify-between"><span>Paid:</span><b className="text-emerald-500">{formatCurrency(c.totalPaid||0)}</b></div>
+                              
+                              {/* TOTAL BILL BADGE */}
+                              <div className="mb-3">
+                                 <span className="text-[10px] sm:text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-md font-bold">
+                                    Total: {formatCurrency(c.totalBill||0)}
+                                 </span>
+                              </div>
+
+                              <div className="text-[10px] sm:text-sm space-y-1.5 opacity-90">
+                                  <div className="flex justify-between">
+                                      <span>Rem:</span>
+                                      <b className={bal > 0 ? "text-amber-500" : "text-gray-500"}>{formatCurrency(bal)}</b>
+                                  </div>
+                                  <div className="flex justify-between">
+                                      <span>Paid:</span>
+                                      <b className="text-emerald-500">{formatCurrency(c.totalPaid||0)}</b>
+                                  </div>
                               </div>
                               {bal <= 0 && (
                                 <button onClick={(e)=>{e.stopPropagation(); openDeleteModal(c.id, 'customer')}} className="w-full mt-3 text-[10px] text-red-500 border border-red-500/20 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Remove</button>
@@ -1251,7 +1264,10 @@ export default function App() {
                     <h2 className={`text-xl sm:text-2xl font-black mb-6 flex items-center gap-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}><Archive className="text-red-500"/> Deleted Customers</h2>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                         {deletedCust.map(c => (
-                            <div key={c.id} className={`p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                            <div 
+                                key={c.id} 
+                                className={`p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
+                            >
                                 <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
                                     <p className={`font-bold text-sm sm:text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.name}</p>
                                     <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-bold">Deleted</span>
@@ -1260,7 +1276,8 @@ export default function App() {
                                     <div className="flex justify-between"><span>Bal:</span><b>{formatCurrency((c.totalBill||0)-(c.totalPaid||0))}</b></div>
                                 </div>
                                 <div className="flex gap-1.5">
-                                     <button onClick={() => openRestoreModal(c.id)} className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/> Restore</button>
+                                     <button onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className="flex-1 py-1.5 bg-slate-500/10 text-slate-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-slate-500 hover:text-white transition-colors">View</button>
+                                     <button onClick={() => openRestoreModal(c.id)} className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/></button>
                                 </div>
                             </div>
                         ))}
@@ -1269,9 +1286,8 @@ export default function App() {
             </div>
          )}
 
-         {/* MAMA (PARTNER SHARE) - FIXED RESPONSIVENESS */}
+         {/* MAMA (PARTNER SHARE) */}
          {activeTab === 'mama' && (
-            /* FIX: Removed overflow-hidden from parent to allow page scroll */
             <div className="space-y-6 h-auto lg:h-full flex flex-col pb-20">
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 shrink-0">
                   <div className={`p-4 sm:p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Total</p><p className="text-xl font-black text-blue-500">{formatCurrency(stats.mamaTotal)}</p></div>
@@ -1297,7 +1313,6 @@ export default function App() {
                   </div>
 
                   <div className="flex-1 lg:overflow-auto">
-                      {/* RESPONSIVE: CARD VIEW ON MOBILE */}
                       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
                           {mamaTab === 'pending' ? (
                              sortedPendingMamaSales.length === 0 ? <div className="col-span-2 p-8 text-center opacity-40 text-sm">No pending payments</div> :
