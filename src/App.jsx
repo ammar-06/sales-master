@@ -13,6 +13,8 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   onSnapshot,
   serverTimestamp,
   runTransaction,
@@ -46,7 +48,8 @@ import {
   Lock,
   Mail,
   Eye,
-  EyeOff,
+  User,
+  UserCircle,
   Package,
   MinusCircle,
   Wallet,
@@ -55,10 +58,15 @@ import {
   ShoppingBag,
   Undo2,
   ShieldCheck,
-  RefreshCcw
+  RefreshCcw,
+  BarChart3,
+  AlertCircle,
+  Trophy,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 
-// --- 🔴 FIREBASE CONFIG (Aapki Keys) ---
+// --- 🔴 FIREBASE CONFIG ---
 const firebaseConfig = {
   apiKey: "AIzaSyDYh-3At6q9nmvD3LLvFABalwF9NosTAsc",
   authDomain: "ammar-hub.firebaseapp.com",
@@ -146,13 +154,13 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className={`p-6 rounded-2xl shadow-2xl w-[95%] max-w-sm transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
         <div className="flex flex-col items-center text-center">
-          <div className={`p-4 rounded-full mb-4 ${isDanger ? (darkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-100 text-red-600') : (darkMode ? 'bg-blue-900/30 text-blue-500' : 'bg-blue-100 text-blue-600')}`}>
-            {isDanger ? <Trash2 size={32} /> : <Undo2 size={32} />}
+          <div className={`p-4 rounded-full mb-4 ${isDanger ? (darkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-50 text-red-600') : (darkMode ? 'bg-blue-900/30 text-blue-500' : 'bg-blue-50 text-blue-600')}`}>
+            {isDanger ? <Trash2 size={32} /> : <RotateCcw size={32} />}
           </div>
-          <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{title}</h3>
-          <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{message}</p>
+          <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
+          <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>{message}</p>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <button onClick={onClose} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Cancel</button>
+            <button onClick={onClose} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Cancel</button>
             <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg transition-all active:scale-95 ${isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{isDanger ? 'Confirm' : 'Proceed'}</button>
           </div>
         </div>
@@ -161,15 +169,18 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
-const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode }) => (
-  <div className={`p-4 md:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-1 h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-    <div className="flex justify-between items-start mb-2">
-       <div className={`p-2.5 rounded-xl shadow-sm ${colorClass}`}><Icon size={20} /></div>
-       <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</p>
+// PROFESSIONAL CARD COMPONENT
+const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode, iconBgClass, iconTextClass }) => (
+  <div className={`p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-xl active:scale-95 cursor-default h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <div className="flex justify-between items-start mb-4">
+       <div className={`p-3 rounded-xl shadow-sm ${darkMode ? colorClass : iconBgClass}`}>
+          <Icon size={22} className={darkMode ? 'text-white' : iconTextClass} />
+       </div>
     </div>
     <div>
-      <h3 className={`text-base sm:text-lg md:text-2xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {subtext && <p className={`text-[10px] md:text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p>}
+       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>{title}</p>
+       <h3 className={`text-2xl sm:text-3xl font-black break-words leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
+       {subtext && <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>{subtext}</p>}
     </div>
   </div>
 );
@@ -185,6 +196,7 @@ export default function App() {
   
   // Login
   const [isLoginView, setIsLoginView] = useState(true);
+  const [authName, setAuthName] = useState(''); 
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authCode, setAuthCode] = useState('');
@@ -197,6 +209,7 @@ export default function App() {
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [userProfileName, setUserProfileName] = useState(''); 
   
   // UI States
   const [inventorySearch, setInventorySearch] = useState('');
@@ -207,6 +220,8 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, id: null, title: '', message: '', isDanger: false });
   const [mamaTab, setMamaTab] = useState('pending');
+  // NEW: State for Insights Widget
+  const [insightView, setInsightView] = useState(null); // 'risk' | 'highVol' | null
   
   const [viewingCustomer, setViewingCustomer] = useState(null);
   const [customerModalTab, setCustomerModalTab] = useState('payments');
@@ -232,6 +247,27 @@ export default function App() {
   const inventorySearchInput = useRef(null);
   const idsInputRef = useRef(null); 
 
+  // --- INJECT CUSTOM CSS FOR SMOOTH ANIMATIONS ---
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+      
+      @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+      .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+
+      /* Custom Scrollbar for a cleaner look */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      .dark ::-webkit-scrollbar-thumb { background: #334155; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   // Effects
   useEffect(() => { document.title = "Sales Master"; }, []);
   
@@ -242,9 +278,36 @@ export default function App() {
 
   useEffect(() => {
     if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (u) => { setUser(u); setAuthLoading(false); });
+    const unsubscribe = onAuthStateChanged(auth, (u) => { 
+        setUser(u); 
+        setAuthLoading(false);
+        setAuthEmail('');
+        setAuthPassword('');
+        setAuthName('');
+    });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user || !db) {
+        setUserProfileName('');
+        return;
+    }
+    const fetchProfile = async () => {
+        try {
+            const profileRef = doc(db, `artifacts/${appId}/users/${user.uid}/account/info`);
+            const docSnap = await getDoc(profileRef);
+            if (docSnap.exists()) {
+                setUserProfileName(docSnap.data().name);
+            } else {
+                setUserProfileName("User"); 
+            }
+        } catch (e) {
+            console.error("Profile fetch error", e);
+        }
+    };
+    fetchProfile();
+  }, [user]);
 
   useEffect(() => {
     if (!user || !db) return;
@@ -291,7 +354,26 @@ export default function App() {
 
   const openDeleteModal = (id, type) => {
     playSound('pop');
-    setModalConfig({ isOpen: true, type: type === 'inventory' ? 'DELETE_INVENTORY' : 'DELETE_CUSTOMER', id, title: 'Confirm Deletion', message: 'This action cannot be undone.', isDanger: true });
+    setModalConfig({ 
+        isOpen: true, 
+        type: type === 'inventory' ? 'DELETE_INVENTORY' : 'ARCHIVE_CUSTOMER',
+        id, 
+        title: type === 'inventory' ? 'Confirm Deletion' : 'Remove Customer?',
+        message: type === 'inventory' ? 'This action cannot be undone.' : 'Customer will be moved to Deleted Customers tab.', 
+        isDanger: true 
+    });
+  };
+
+  const openRestoreModal = (id) => {
+    playSound('pop');
+    setModalConfig({ 
+        isOpen: true, 
+        type: 'RESTORE_CUSTOMER', 
+        id, 
+        title: 'Restore Customer?',
+        message: 'This customer will appear in the main list again.', 
+        isDanger: false 
+    });
   };
 
   const openReturnModal = (saleItem) => {
@@ -334,6 +416,20 @@ export default function App() {
         showToast("Item Returned & Stock Restored");
         playSound('delete');
 
+      } else if (type === 'ARCHIVE_CUSTOMER') {
+        await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, id), {
+            status: 'deleted'
+        });
+        showToast("Customer Removed");
+        playSound('delete');
+        
+      } else if (type === 'RESTORE_CUSTOMER') {
+        await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, id), {
+            status: 'active'
+        });
+        showToast("Customer Restored");
+        playSound('success');
+
       } else {
         const path = type === 'DELETE_INVENTORY' ? 'inventory' : 'customers';
         await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/${path}`, id));
@@ -350,6 +446,8 @@ export default function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     const email = authEmail.trim(); const password = authPassword;
+    
+    if (!isLoginView && !authName.trim()) { showToast("Name is required", 'error'); return; }
     if (!email || !password) { showToast("Email and Password are required", 'error'); return; }
     
     if (!isLoginView && authCode !== ADMIN_ACCESS_CODE) {
@@ -360,8 +458,18 @@ export default function App() {
 
     setIsSubmitting(true);
     try {
-      if (isLoginView) { await signInWithEmailAndPassword(auth, email, password); showToast("Welcome back!"); }
-      else { await createUserWithEmailAndPassword(auth, email, password); showToast("Account Created!"); }
+      if (isLoginView) { 
+          await signInWithEmailAndPassword(auth, email, password); 
+          showToast("Welcome back!"); 
+      } else { 
+          const userCred = await createUserWithEmailAndPassword(auth, email, password); 
+          await setDoc(doc(db, `artifacts/${appId}/users/${userCred.user.uid}/account/info`), {
+              name: authName.trim(),
+              email: email,
+              joinedAt: serverTimestamp()
+          });
+          showToast("Account Created!"); 
+      }
       playSound('success');
     } catch (err) { showToast(getFriendlyErrorMessage(err.code), 'error'); }
     finally { setIsSubmitting(false); }
@@ -476,7 +584,7 @@ export default function App() {
            itemsToSell.push({ ref: itemRef, data: itemSnap.data(), id: cartItem.id });
         }
         
-        let custRef, existing = customers.find(c => c.name.toLowerCase().trim() === saleForm.customerName.trim().toLowerCase());
+        let custRef, existing = customers.find(c => c.name.toLowerCase().trim() === saleForm.customerName.trim().toLowerCase() && c.status !== 'deleted'); 
         if (existing) custRef = doc(db, `${userRef}/customers/${existing.id}`);
         else custRef = doc(collection(db, `${userRef}/customers`));
         
@@ -487,7 +595,8 @@ export default function App() {
         let updateData = { 
             totalBill: (custSnap.exists() ? (custSnap.data().totalBill || 0) : 0) + totalSale, 
             totalPaid: (custSnap.exists() ? (custSnap.data().totalPaid || 0) : 0) + paid, 
-            lastUpdated: serverTimestamp() 
+            lastUpdated: serverTimestamp(),
+            status: 'active'
         };
         
         if (paid > 0) { updateData.lastPaymentDate = serverTimestamp(); }
@@ -531,7 +640,7 @@ export default function App() {
   const paymentCustomerMatches = useMemo(() => {
     if (!paymentCustomerSearch) return [];
     const lower = paymentCustomerSearch.toLowerCase();
-    return customers.filter(c => c.name.toLowerCase().includes(lower)).slice(0, 5);
+    return customers.filter(c => c.name.toLowerCase().includes(lower) && c.status !== 'deleted').slice(0, 5);
   }, [customers, paymentCustomerSearch]);
 
   const selectPaymentCustomer = (c) => {
@@ -544,7 +653,7 @@ export default function App() {
   const saleCustomerMatches = useMemo(() => {
     if (!saleForm.customerName) return [];
     const lower = saleForm.customerName.toLowerCase();
-    return customers.filter(c => c.name.toLowerCase().includes(lower)).slice(0, 5);
+    return customers.filter(c => c.name.toLowerCase().includes(lower) && c.status !== 'deleted').slice(0, 5);
   }, [customers, saleForm.customerName]);
 
   const handleAddPayment = async (e) => {
@@ -578,7 +687,6 @@ export default function App() {
       } catch (err) { showToast("Error adding payment", 'error'); }
   };
 
-  // NEW: Handle Refund Action
   const handleRefund = async (e) => {
       e.preventDefault();
       if (!user) return;
@@ -591,7 +699,6 @@ export default function App() {
       if (!amountToRefund || amountToRefund <= 0) { showToast("Amount must be positive", 'error'); return; }
       
       try {
-        // Reduce totalPaid
         const newPaid = Math.max(0, (cust.totalPaid || 0) - amountToRefund);
 
         await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/customers`, paymentForm.customerId), {
@@ -602,12 +709,12 @@ export default function App() {
             customerId: paymentForm.customerId,
             amount: amountToRefund,
             date: serverTimestamp(),
-            type: 'Refund' // Mark as Refund
+            type: 'Refund' 
         });
 
         setPaymentForm({ customerId: '', amount: '' }); 
         setPaymentCustomerSearch(''); 
-        showToast("Refund Processed!"); playSound('delete'); // Different sound for refund
+        showToast("Refund Processed!"); playSound('delete'); 
       } catch (err) { showToast("Error processing refund", 'error'); }
   };
  
@@ -653,6 +760,28 @@ export default function App() {
     };
   }, [inventory, sales, customers]);
 
+  // --- NEW INSIGHTS CALCULATION (Only Active Customers) ---
+  const riskCustomers = useMemo(() => {
+    const now = new Date();
+    return customers.filter(c => {
+        if (c.status === 'deleted') return false; 
+        const balance = (c.totalBill || 0) - (c.totalPaid || 0);
+        if (balance <= 0) return false; 
+        
+        if (!c.lastPaymentDate) return true; 
+
+        const lastDate = new Date(c.lastPaymentDate.seconds * 1000);
+        const diffTime = Math.abs(now - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 30;
+    });
+  }, [customers]);
+
+  const highVolumeCustomers = useMemo(() => {
+    return customers.filter(c => c.status !== 'deleted' && ((c.totalBill || 0) - (c.totalPaid || 0)) > 10000);
+  }, [customers]);
+
+
   const filteredInv = useMemo(() => {
     const upperSearch = inventorySearch.toUpperCase();
     const lowerSearch = inventorySearch.toLowerCase();
@@ -660,10 +789,9 @@ export default function App() {
     return d.sort((a, b) => (a.suitId || '').localeCompare(b.suitId || '', undefined, { numeric: true, sensitivity: 'base' }));
   }, [inventory, inventorySearch, showAvailableOnly]);
 
-  // --- FIXED: SAFE SORTING ---
   const filteredCust = useMemo(() => {
     return customers
-      .filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()))
+      .filter(c => c.status !== 'deleted' && (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()))
       .sort((a, b) => {
         const balA = (a.totalBill || 0) - (a.totalPaid || 0);
         const balB = (b.totalBill || 0) - (b.totalPaid || 0);
@@ -677,15 +805,17 @@ export default function App() {
       });
   }, [customers, customerSearch]);
 
+  const deletedCust = useMemo(() => {
+    return customers.filter(c => c.status === 'deleted');
+  }, [customers]);
+
   const filteredInventoryValue = useMemo(() => filteredInv.reduce((acc, item) => acc + (Number(item.orgPrice)||0), 0), [filteredInv]);
 
-  // --- MODAL ACTIONS WITH LIVE UPDATES ---
   const activeCustomer = useMemo(() => {
       return customers.find(c => c.id === viewingCustomer?.id) || viewingCustomer;
   }, [customers, viewingCustomer]);
 
   const handleModalPayment = async () => {
-    // Use LIVE customer data
     if (!activeCustomer || !modalAmount || Number(modalAmount) <= 0) return;
     
     const amountToAdd = Number(modalAmount);
@@ -751,7 +881,6 @@ export default function App() {
       return sales.filter(s => s.customerId === activeCustomer.id);
   }, [sales, activeCustomer]);
 
-  // --- NEW SORTING LOGIC FOR PARTNER SHARE ---
   const sortedPendingMamaSales = useMemo(() => {
     return sales
       .filter(s => !s.mamaPaid)
@@ -764,49 +893,80 @@ export default function App() {
       .sort((a, b) => (a.suitId || '').localeCompare(b.suitId || '', undefined, { numeric: true, sensitivity: 'base' }));
   }, [sales]);
 
-  if (authLoading) return <div className={`h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}><LoadingSpinner /></div>;
+  if (authLoading) return <div className={`h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-gray-50'}`}><LoadingSpinner /></div>;
 
   // LOGIN SCREEN
   if (!user) {
     return (
-      <div className={`h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-gradient-to-br from-slate-100 to-blue-50 text-slate-800'}`}>
+      <div className={`h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-slate-800'}`}>
         <ToastContainer toasts={toasts} removeToast={removeToast} />
-        <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white/80 border border-white'}`}>
+        <div className={`w-full max-w-md p-8 rounded-3xl shadow-2xl transition-all ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-100 shadow-slate-200/50'}`}>
           <div className="text-center mb-8">
-            {/* Updated to Shirt Icon */}
-            <div className="flex justify-center mb-4 bg-blue-600/20 p-4 rounded-full w-fit mx-auto text-blue-600"><Shirt size={40}/></div>
-            <h1 className="text-4xl font-black tracking-tighter mb-2 text-blue-600">Sales Master</h1>
+            <div className="flex justify-center mb-4 bg-blue-600 p-4 rounded-2xl w-fit mx-auto text-white shadow-lg shadow-blue-600/30"><Shirt size={32}/></div>
+            <h1 className="text-4xl font-black tracking-tighter mb-2">Sales Master</h1>
             <p className="text-xs font-bold uppercase opacity-50 tracking-widest">Retail Management System</p>
           </div>
           <form onSubmit={handleAuth} className="space-y-4">
-            <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-               <Mail size={18} className="opacity-50 mr-3" />
-               <input type="email" required className="bg-transparent outline-none flex-1 text-sm" placeholder="Email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
-            </div>
-            <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-               <Lock size={18} className="opacity-50 mr-3" />
-               <input type={showPassword?"text":"password"} required className="bg-transparent outline-none flex-1 text-sm" placeholder="Password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
-               <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={18} className="opacity-50"/></button>
-            </div>
+            
             {!isLoginView && (
-                <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                    <ShieldCheck size={18} className="opacity-50 mr-3 text-red-500" />
-                    <input type="text" required className="bg-transparent outline-none flex-1 text-sm" placeholder="Admin Access Code" value={authCode} onChange={e => setAuthCode(e.target.value)} />
+                <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <User size={18} className="opacity-50 mr-3" />
+                    <input 
+                        type="text" 
+                        required 
+                        autoComplete="off" 
+                        className="bg-transparent outline-none flex-1 text-sm font-medium" 
+                        placeholder="Full Name" 
+                        value={authName} 
+                        onChange={e => setAuthName(e.target.value)} 
+                    />
                 </div>
             )}
 
-            <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 transition-transform active:scale-95">
+            <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+               <Mail size={18} className="opacity-50 mr-3" />
+               <input 
+                   type="email" 
+                   required 
+                   autoComplete="off" 
+                   className="bg-transparent outline-none flex-1 text-sm font-medium" 
+                   placeholder="Email" 
+                   value={authEmail} 
+                   onChange={e => setAuthEmail(e.target.value)} 
+                />
+            </div>
+            <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+               <Lock size={18} className="opacity-50 mr-3" />
+               <input 
+                   type={showPassword?"text":"password"} 
+                   required 
+                   autoComplete="new-password" 
+                   className="bg-transparent outline-none flex-1 text-sm font-medium" 
+                   placeholder="Password" 
+                   value={authPassword} 
+                   onChange={e => setAuthPassword(e.target.value)} 
+                />
+               <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={18} className="opacity-50 hover:opacity-100 transition-opacity"/></button>
+            </div>
+            {!isLoginView && (
+                <div className={`flex items-center px-4 py-3 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <ShieldCheck size={18} className="opacity-50 mr-3 text-red-500" />
+                    <input type="text" required autoComplete="off" className="bg-transparent outline-none flex-1 text-sm font-medium" placeholder="Admin Access Code" value={authCode} onChange={e => setAuthCode(e.target.value)} />
+                </div>
+            )}
+
+            <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all active:scale-95">
                {isSubmitting ? <Loader2 className="animate-spin mx-auto"/> : (isLoginView ? "Login" : "Sign Up")}
             </button>
           </form>
-          <button onClick={() => setIsLoginView(!isLoginView)} className="w-full text-center mt-4 text-xs font-bold text-blue-500 hover:underline">{isLoginView ? "Create Account" : "Back to Login"}</button>
+          <button onClick={() => setIsLoginView(!isLoginView)} className="w-full text-center mt-6 text-xs font-bold text-blue-500 hover:text-blue-600 hover:underline">{isLoginView ? "Create New Account" : "Back to Login"}</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-screen font-sans overflow-hidden ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`flex h-dvh font-sans overflow-hidden ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50/50 text-slate-800'}`}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <ConfirmationModal isOpen={modalConfig.isOpen} onClose={() => setModalConfig({...modalConfig, isOpen: false})} onConfirm={handleConfirmAction} title={modalConfig.title} message={modalConfig.message} isDanger={modalConfig.isDanger} darkMode={darkMode} />
       
@@ -817,50 +977,62 @@ export default function App() {
       
       <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
         <div onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
-           <Shirt className="text-blue-500"/>
-           <div><h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1><p className="text-[10px] text-slate-400 font-mono">v1.5 Pro</p></div>
+           <div className="bg-blue-600 p-2 rounded-lg"><Shirt className="text-white" size={20}/></div>
+           <div>
+               <h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1>
+               {/* RESPONSIVE NAME FIX: md: classes added */}
+               <div className="flex items-center gap-2 mt-1">
+                   <UserCircle size={12} className="text-slate-400"/>
+                   <p className="text-[10px] md:text-xs md:text-white md:font-bold text-slate-300 font-mono uppercase tracking-wide">
+                       {userProfileName || 'User'}
+                   </p>
+               </div>
+           </div>
            <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
-           {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}].map(i => (
-             <button key={i.id} onClick={() => {setActiveTab(i.id); setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
+           {[{id:'dashboard', icon:LayoutDashboard, label:'Dashboard'}, {id:'inventory', icon:Shirt, label:'Inventory'}, {id:'sales', icon:ShoppingCart, label:'Sales'}, {id:'customers', icon:Users, label:'Customers'}, {id:'mama', icon:Handshake, label:'Partner Share'}, {id:'insights', icon:BarChart3, label:'Insights'}, {id:'trash', icon:Archive, label:'Deleted Customers'}].map(i => (
+             <button key={i.id} onClick={() => {setActiveTab(i.id); setMobileMenuOpen(false)}} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
                <i.icon size={20} /> <span className="capitalize font-medium">{i.label}</span>
              </button>
            ))}
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-2">
-           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-colors">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} Mode</button>
-           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-900/20 text-red-500 text-xs font-bold hover:bg-red-900/30 transition-colors"><LogOut size={14}/> Logout</button>
+           <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-colors">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} {darkMode ? "Light Mode" : "Dark Mode"}</button>
+           <button onClick={openLogoutModal} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-500/20 transition-colors"><LogOut size={14}/> Logout</button>
         </div>
       </div>
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-          {/* Mobile Header */}
-         <div className="md:hidden flex shrink-0 justify-between items-center p-4 border-b border-slate-200/10">
+         {/* Mobile Header */}
+         <div className={`md:hidden flex shrink-0 justify-between items-center p-4 border-b ${darkMode ? 'border-slate-800' : 'bg-white border-slate-200'}`}>
             <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-blue-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"><Menu/></button>
-            <h2 className="font-bold uppercase tracking-wider text-sm">{activeTab === 'mama' ? "PARTNER SHARE" : activeTab}</h2><div className="w-8"></div>
+            <h2 className="font-bold uppercase tracking-wider text-sm text-slate-500">{activeTab === 'mama' ? "PARTNER SHARE" : activeTab}</h2><div className="w-8"></div>
          </div>
 
-         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+         {/* MAIN CONTENT WRAPPER WITH ANIMATION */}
+         <div key={activeTab} className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 scroll-smooth animate-fade-in">
 
          {/* DASHBOARD */}
          {activeTab === 'dashboard' && (
-           <div className="space-y-6 animate-fade-in">
+           <div className="space-y-6">
              <div className="grid grid-cols-2 md:grid-cols-5 gap-4"> 
-                <Card darkMode={darkMode} title="Capital" value={formatCurrency(stats.capital)} icon={Layers} colorClass="bg-blue-100 text-blue-600"/>
-                <Card darkMode={darkMode} title="Profit" value={formatCurrency(stats.profit)} icon={TrendingUp} colorClass="bg-green-100 text-green-600"/>
-                <Card darkMode={darkMode} title="Pending" value={formatCurrency(stats.receivable)} icon={CreditCard} colorClass="bg-orange-100 text-orange-600"/>
-                <Card darkMode={darkMode} title="Received" value={formatCurrency(stats.received)} icon={Wallet} colorClass="bg-teal-100 text-teal-600"/>
-                <Card darkMode={darkMode} title="Stock" value={formatCurrency(stats.stock)} icon={Package} colorClass="bg-purple-100 text-purple-600"/>
+                {/* Updated Cards: White bg in light mode with refined borders and icons */}
+                <Card darkMode={darkMode} title="Capital" value={formatCurrency(stats.capital)} icon={Layers} colorClass="bg-blue-600/20 text-blue-500" iconBgClass="bg-blue-50" iconTextClass="text-blue-600" />
+                <Card darkMode={darkMode} title="Profit" value={formatCurrency(stats.profit)} icon={TrendingUp} colorClass="bg-emerald-600/20 text-emerald-500" iconBgClass="bg-emerald-50" iconTextClass="text-emerald-600" />
+                <Card darkMode={darkMode} title="Pending" value={formatCurrency(stats.receivable)} icon={CreditCard} colorClass="bg-amber-600/20 text-amber-500" iconBgClass="bg-amber-50" iconTextClass="text-amber-600" />
+                <Card darkMode={darkMode} title="Received" value={formatCurrency(stats.received)} icon={Wallet} colorClass="bg-teal-600/20 text-teal-500" iconBgClass="bg-teal-50" iconTextClass="text-teal-600" />
+                <Card darkMode={darkMode} title="Stock" value={formatCurrency(stats.stock)} icon={Package} colorClass="bg-purple-600/20 text-purple-500" iconBgClass="bg-purple-50" iconTextClass="text-purple-600" />
              </div>
-             <div className={`p-6 rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
-                <h3 className="font-bold mb-4 text-lg">Recent Sales</h3>
+             
+             <div className={`p-6 rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                <h3 className={`font-bold mb-6 text-lg tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Sales</h3>
                 <div className="space-y-2">
                    {sales.slice(0,5).map(s => (
-                     <div key={s.id} className={`flex justify-between p-4 rounded-xl transition-colors ${darkMode?'bg-slate-700/30 hover:bg-slate-700/50':'bg-slate-50 hover:bg-slate-100'}`}>
-                       <div><p className="font-bold text-sm">{s.customerName}</p><p className="text-xs opacity-50 font-mono">{s.suitId}</p></div>
-                       <div className="text-right"><p className="font-bold text-green-500 text-sm">+{formatCurrency(s.salePrice)}</p></div>
+                     <div key={s.id} className={`flex justify-between items-center p-4 rounded-xl transition-all duration-200 ${darkMode?'bg-slate-700/30 hover:bg-slate-700/50':'bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100'}`}>
+                       <div><p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{s.customerName}</p><p className="text-xs opacity-50 font-mono">{s.suitId}</p></div>
+                       <div className="text-right"><p className="font-bold text-emerald-500 text-sm">+{formatCurrency(s.salePrice)}</p></div>
                      </div>
                    ))}
                 </div>
@@ -870,59 +1042,59 @@ export default function App() {
 
          {/* INVENTORY */}
          {activeTab === 'inventory' && (
-           <div className="flex flex-col lg:flex-row gap-6 h-full animate-fade-in">
-              <div className={`p-6 rounded-2xl shadow-lg border h-fit w-full lg:w-80 shrink-0 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
-                 <h3 className="font-bold mb-6 flex gap-2 items-center text-lg"><Plus size={20} className="text-blue-500"/> Add Stock</h3>
-                 <form onSubmit={handleAddDress} className="space-y-4">
-                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">IDs (Comma/Space Separated)</label><textarea ref={idsInputRef} required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600':'border-slate-200'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2 A3..."/></div>
-                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Brand</label><input required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600':'border-slate-200'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})}/></div>
-                   <div className="grid grid-cols-2 gap-3">
-                      <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600':'border-slate-200'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})}/></div>
-                      <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600':'border-slate-200'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})}/></div>
+           <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+             <div className={`p-6 rounded-2xl shadow-sm border h-fit w-full lg:w-80 shrink-0 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                <h3 className={`font-bold mb-6 flex gap-2 items-center text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={20} className="text-blue-500"/> Add Stock</h3>
+                <form onSubmit={handleAddDress} className="space-y-4">
+                  <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">IDs (Comma/Space)</label><textarea ref={idsInputRef} required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2 A3..."/></div>
+                  <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})}/></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})}/></div>
+                    <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})}/></div>
+                  </div>
+                  <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Add Stock</button>
+                </form>
+             </div>
+             
+             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                   <div className={`p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}><Search size={18} className="opacity-50"/><input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/></div>
+                   <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
+                   
+                   <div className="flex-1 overflow-auto">
+                      <table className="w-full text-left text-sm table-fixed min-w-[600px]">
+                         <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'}`}>
+                           <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-200/10">
+                            {filteredInv.length === 0 ? (
+                              <tr><td colSpan="6" className="p-12 text-center opacity-40 text-sm">No items found.</td></tr>
+                            ) : (
+                               filteredInv.map(i => (
+                                  <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-blue-50/50 border-b border-gray-50'}`}>
+                                     <td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className={`truncate font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</td><td className="text-right opacity-60 font-medium">{i.orgPrice}</td><td className={`text-right font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</td>
+                                     <td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td>
+                                     <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded transition-colors"><Edit size={16}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded transition-colors"><Trash2 size={16}/></button></>}</td>
+                                  </tr>
+                               ))
+                            )}
+                         </tbody>
+                      </table>
                    </div>
-                   <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Add Stock</button>
-                 </form>
-              </div>
-              <div className="flex-1 flex flex-col overflow-hidden">
-                 <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
-                    <div className="p-4 border-b flex shrink-0 gap-3 items-center border-slate-200/10"><Search size={18} className="opacity-50"/><input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/></div>
-                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
-                    
-                    <div className="flex-1 overflow-auto">
-                       <table className="w-full text-left text-sm table-fixed min-w-[600px]">
-                          <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-slate-500'} shadow-sm`}>
-                            <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200/10">
-                             {filteredInv.length === 0 ? (
-                                <tr><td colSpan="6" className="p-12 text-center opacity-40 text-sm">No items found.</td></tr>
-                             ) : (
-                                filteredInv.map(i => (
-                                   <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}>
-                                      <td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className="truncate">{i.brand}</td><td className="text-right opacity-60">{i.orgPrice}</td><td className="text-right font-bold">{i.salePrice}</td>
-                                      <td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td>
-                                      <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded"><Edit size={16}/></button><button onClick={()=>openDeleteModal(i.id, 'inventory')} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded"><Trash2 size={16}/></button></>}</td>
-                                   </tr>
-                                ))
-                             )}
-                          </tbody>
-                       </table>
-                    </div>
-                 </div>
-              </div>
+                </div>
+             </div>
            </div>
          )}
 
          {/* SALES (POS) */}
          {activeTab === 'sales' && (
-            <div className="max-w-2xl mx-auto animate-fade-in">
-               <div className={`p-8 rounded-3xl shadow-xl border ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
-                  <h2 className="text-xl font-black text-center mb-8 tracking-tight">POS TERMINAL</h2>
+            <div className="max-w-2xl mx-auto">
+               <div className={`p-8 rounded-3xl shadow-xl border ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/60'}`}>
+                  <h2 className={`text-xl font-black text-center mb-8 tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>POS TERMINAL</h2>
                   
-                  {/* Item Search & Add */}
                   <div className="relative mb-8">
                      <label className="text-xs font-bold opacity-50 block mb-2 uppercase tracking-wider">Search Product</label>
-                     <div className={`flex items-center p-4 border rounded-2xl transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode?'border-slate-600 bg-slate-900':'border-slate-200 bg-slate-50'}`}>
+                     <div className={`flex items-center p-4 border rounded-2xl transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode?'border-slate-600 bg-slate-900':'border-slate-200 bg-white'}`}>
                         <Search size={20} className="opacity-50 mr-3"/>
                         <input
                           autoFocus
@@ -933,11 +1105,11 @@ export default function App() {
                         />
                      </div>
                      {availableItems.length > 0 && (
-                       <div className={`absolute w-full mt-2 rounded-2xl border shadow-2xl z-20 overflow-hidden ${darkMode?'bg-slate-800 border-slate-600':'bg-white border-slate-200'}`}>
+                       <div className={`absolute w-full mt-2 rounded-2xl border shadow-2xl z-20 overflow-hidden ${darkMode?'bg-slate-800 border-slate-600':'bg-white border-slate-100'}`}>
                           {availableItems.map(item => (
-                            <div key={item.id} onClick={() => addToCart(item)} className={`p-4 flex justify-between items-center cursor-pointer hover:bg-blue-500 hover:text-white transition-colors border-b last:border-0 ${darkMode?'border-slate-700':'border-slate-100'}`}>
+                            <div key={item.id} onClick={() => addToCart(item)} className={`p-4 flex justify-between items-center cursor-pointer hover:bg-blue-500 hover:text-white transition-colors border-b last:border-0 ${darkMode?'border-slate-700':'border-slate-50'}`}>
                                <span className="font-bold font-mono">{item.suitId}</span>
-                               <span className="text-sm">{item.brand}</span>
+                               <span className="text-sm opacity-90">{item.brand}</span>
                                <span className="text-sm font-bold">{formatCurrency(item.salePrice)}</span>
                             </div>
                           ))}
@@ -945,24 +1117,23 @@ export default function App() {
                      )}
                   </div>
 
-                  {/* Cart Display */}
-                  <div className={`mb-8 rounded-2xl border overflow-hidden ${darkMode?'border-slate-700 bg-slate-900/30':'border-slate-200 bg-slate-50'}`}>
-                     <div className="p-4 border-b opacity-50 text-xs font-bold uppercase flex justify-between bg-black/5">
+                  <div className={`mb-8 rounded-2xl border overflow-hidden ${darkMode?'border-slate-700 bg-slate-900/30':'border-slate-200 bg-gray-50'}`}>
+                     <div className={`p-4 border-b text-xs font-bold uppercase flex justify-between ${darkMode ? 'bg-black/20 text-slate-400 border-slate-700' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                         <span>Selected Items ({cart.length})</span>
                         <span>Total</span>
                      </div>
                      {cart.length === 0 ? (
                        <div className="p-10 text-center opacity-40 text-sm font-medium">Cart is empty</div>
                      ) : (
-                       <div className="divide-y divide-slate-200/10">
+                       <div className={`divide-y ${darkMode ? 'divide-slate-700' : 'divide-slate-200'}`}>
                           {cart.map(item => (
                             <div key={item.id} className="p-4 flex justify-between items-center animate-slide-in">
                                <div>
-                                  <p className="font-bold text-sm">{item.suitId}</p>
+                                  <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.suitId}</p>
                                   <p className="text-xs opacity-60">{item.brand}</p>
                                </div>
                                <div className="flex items-center gap-4">
-                                  <span className="font-bold text-sm">{formatCurrency(item.salePrice)}</span>
+                                  <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(item.salePrice)}</span>
                                   <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:bg-red-500/10 p-2 rounded-full transition-colors"><MinusCircle size={18}/></button>
                                </div>
                             </div>
@@ -970,26 +1141,24 @@ export default function App() {
                        </div>
                      )}
                      <div className={`p-5 border-t flex justify-between items-center font-black text-xl ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200'}`}>
-                        <span>Total Bill</span>
-                        <span className="text-green-500">{formatCurrency(cart.reduce((s,i)=>s+i.salePrice,0))}</span>
+                        <span className={darkMode ? 'text-white' : 'text-gray-900'}>Total Bill</span>
+                        <span className="text-emerald-500">{formatCurrency(cart.reduce((s,i)=>s+i.salePrice,0))}</span>
                      </div>
                   </div>
 
-                  {/* Finalize Sale */}
                   <div className="space-y-5">
                      <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Customer Name</label>
                      
-                     {/* SMART SEARCH FOR SALES CUSTOMER */}
                      <div className="relative">
                         <input
                            type="text"
                            required
-                           className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600':'border-slate-200'}`}
+                           className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`}
                            placeholder="Type name..."
                            value={saleForm.customerName}
                            onChange={(e) => {
-                              setSaleForm({...saleForm, customerName: e.target.value});
-                              setShowSaleCustomerSuggestions(true);
+                             setSaleForm({...saleForm, customerName: e.target.value});
+                             setShowSaleCustomerSuggestions(true);
                            }}
                            onFocus={() => setShowSaleCustomerSuggestions(true)}
                            onBlur={() => setTimeout(() => setShowSaleCustomerSuggestions(false), 200)}
@@ -1013,7 +1182,7 @@ export default function App() {
                      </div>
                      
                      </div>
-                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Paid Amount</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600':'border-slate-200'}`} value={saleForm.paidAmount} onChange={e=>setSaleForm({...saleForm, paidAmount:e.target.value})}/></div>
+                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Paid Amount</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`} value={saleForm.paidAmount} onChange={e=>setSaleForm({...saleForm, paidAmount:e.target.value})}/></div>
                      <button onClick={handleProcessSale} disabled={isSubmitting || cart.length===0} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95">CONFIRM SALE</button>
                   </div>
                </div>
@@ -1022,22 +1191,21 @@ export default function App() {
 
          {/* CUSTOMERS */}
          {activeTab === 'customers' && (
-            <div className="flex flex-col h-full overflow-hidden gap-6 animate-fade-in">
-               <div className={`shrink-0 p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
+            <div className="flex flex-col h-full overflow-hidden gap-6">
+               <div className={`shrink-0 p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
                   <div className="flex-1 w-full">
-                     <h3 className="font-bold mb-3 text-lg flex items-center gap-2"><Wallet size={20} className="text-blue-500"/> Quick Payment</h3>
-                     <div className="flex gap-3 items-start">
-                        {/* SMART SEARCHABLE INPUT (REPLACES OLD SELECT) */}
+                     <h3 className={`font-bold mb-3 text-lg flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}><Wallet size={20} className="text-blue-500"/> Quick Payment</h3>
+                     <div className="flex gap-3 items-start flex-col sm:flex-row">
                         <div className="relative flex-1 w-full">
                            <input
                               type="text"
                               placeholder="Search Customer..."
-                              className={`w-full p-3 rounded-xl bg-transparent border text-sm outline-none focus:ring-2 focus:ring-blue-500 ${darkMode ? 'border-slate-600' : 'border-slate-200'}`}
+                              className={`w-full p-3 rounded-xl bg-transparent border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${darkMode ? 'border-slate-600 focus:bg-slate-900' : 'border-slate-200 focus:bg-gray-50'}`}
                               value={paymentCustomerSearch}
                               onChange={(e) => {
                                  setPaymentCustomerSearch(e.target.value);
                                  setShowCustomerSuggestions(true);
-                                 setPaymentForm(prev => ({ ...prev, customerId: '' })); // Reset selection on type
+                                 setPaymentForm(prev => ({ ...prev, customerId: '' })); 
                               }}
                               onFocus={() => setShowCustomerSuggestions(true)}
                               onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
@@ -1057,31 +1225,31 @@ export default function App() {
                            )}
                         </div>
                         
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} placeholder="Amount" className={`p-3 rounded-xl bg-transparent border w-full sm:w-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-200'}`} value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm, amount:e.target.value})}/>
                         <div className="flex gap-2 w-full sm:w-auto">
-                           <button onClick={handleAddPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex-1">Add</button>
-                           {/* ADDED REFUND BUTTON */}
-                           <button onClick={handleRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95" title="Refund Amount"><RefreshCcw size={20}/></button>
+                            <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} placeholder="Amount" className={`p-3 rounded-xl bg-transparent border w-full sm:w-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${darkMode ? 'border-slate-600 focus:bg-slate-900' : 'border-slate-200 focus:bg-gray-50'}`} value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm, amount:e.target.value})}/>
+                            <button onClick={handleAddPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex-1">Add</button>
+                            <button onClick={handleRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95" title="Refund Amount"><RefreshCcw size={20}/></button>
                         </div>
                      </div>
                   </div>
                </div>
                
                <div className="flex-1 overflow-y-auto">
-                  {/* Customer List - Sorted by Payment Status */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4">
                      {filteredCust.map(c => {
                         const bal = (c.totalBill||0)-(c.totalPaid||0);
                         return (
-                           <div key={c.id} onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className={`p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-100 hover:border-blue-200'}`}>
-                              <div className="flex justify-between mb-3"><h4 className={`font-bold text-lg truncate ${darkMode?'text-white':'text-slate-800'}`}>{c.name}</h4><span className="text-xs bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full font-bold">{formatCurrency(c.totalBill||0)}</span></div>
-                              <div className="text-sm space-y-2 opacity-80"><div className="flex justify-between"><span>Rem:</span><b>{formatCurrency(bal)}</b></div><div className="flex justify-between"><span>Paid:</span><b className="text-green-500">{formatCurrency(c.totalPaid||0)}</b></div></div>
+                           <div key={c.id} onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className={`p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}>
+                              <div className="flex justify-between mb-3"><h4 className={`font-bold text-lg truncate ${darkMode?'text-white':'text-gray-900'}`}>{c.name}</h4><span className="text-xs bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full font-bold">{formatCurrency(c.totalBill||0)}</span></div>
+                              <div className="text-sm space-y-2 opacity-80"><div className="flex justify-between"><span>Rem:</span><b>{formatCurrency(bal)}</b></div><div className="flex justify-between"><span>Paid:</span><b className="text-emerald-500">{formatCurrency(c.totalPaid||0)}</b></div></div>
                               <div className={`h-px my-3 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}></div>
                               <div className="flex justify-between items-center text-xs opacity-60">
                                  <span className="flex items-center gap-1"><CalendarCheck size={12}/> Last:</span>
                                  <span>{c.lastPaymentDate ? new Date(c.lastPaymentDate.seconds*1000).toLocaleDateString() : 'N/A'}</span>
                               </div>
-                              {bal===0 && <button onClick={(e)=>{e.stopPropagation(); openDeleteModal(c.id, 'customer')}} className="w-full mt-4 text-xs text-red-500 border border-red-500/20 py-2 rounded-lg hover:bg-red-500/10 transition-colors">Remove Customer</button>}
+                              {bal <= 0 && (
+                                <button onClick={(e)=>{e.stopPropagation(); openDeleteModal(c.id, 'customer')}} className="w-full mt-4 text-xs text-red-500 border border-red-500/20 py-2 rounded-lg hover:bg-red-500/10 transition-colors">Remove Customer</button>
+                              )}
                            </div>
                         )
                      })}
@@ -1090,106 +1258,217 @@ export default function App() {
             </div>
          )}
 
-         {/* MAMA (Renamed to PARTNER SHARE in UI) */}
+         {/* --- NEW DELETED CUSTOMERS TAB --- */}
+         {activeTab === 'trash' && (
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <div className="p-6">
+                    <h2 className={`text-2xl font-black mb-6 flex items-center gap-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}><Archive className="text-red-500"/> Deleted Customers</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
+                        {deletedCust.map(c => (
+                            <div 
+                                key={c.id} 
+                                className={`p-5 rounded-2xl border opacity-75 hover:opacity-100 transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <p className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.name}</p>
+                                    <span className="text-xs bg-red-500/10 text-red-500 px-2 py-1 rounded-full font-bold">Deleted</span>
+                                </div>
+                                <div className="text-sm space-y-2 opacity-60 mb-4">
+                                    <div className="flex justify-between"><span>Balance:</span><b>{formatCurrency((c.totalBill||0)-(c.totalPaid||0))}</b></div>
+                                </div>
+                                <div className="flex gap-2">
+                                     <button onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className="flex-1 py-2 bg-slate-500/10 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-500 hover:text-white transition-colors">View Details</button>
+                                     <button onClick={() => openRestoreModal(c.id)} className="flex-1 py-2 bg-blue-500/10 text-blue-500 text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/> Restore</button>
+                                </div>
+                            </div>
+                        ))}
+                        {deletedCust.length === 0 && (
+                            <div className="col-span-full text-center py-20 opacity-40 border-2 border-dashed rounded-xl">
+                                <Archive size={40} className="mx-auto mb-4"/>
+                                <p>Trash is empty.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+         )}
+
+
+         {/* MAMA (PARTNER SHARE) */}
          {activeTab === 'mama' && (
-            <div className="space-y-6 h-full flex flex-col animate-fade-in">
-               <div className="grid grid-cols-3 gap-4 shrink-0">
-                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Total</p><p className="text-xl font-black text-blue-500">{formatCurrency(stats.mamaTotal)}</p></div>
-                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Pending</p><p className="text-xl font-black text-rose-500">{formatCurrency(stats.mamaPending)}</p></div>
-                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Paid</p><p className="text-xl font-black text-emerald-500">{formatCurrency(stats.mamaPaid)}</p></div>
+            <div className="space-y-6 h-full flex flex-col">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
+                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Total</p><p className="text-xl font-black text-blue-500">{formatCurrency(stats.mamaTotal)}</p></div>
+                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Pending</p><p className="text-xl font-black text-rose-500">{formatCurrency(stats.mamaPending)}</p></div>
+                  <div className={`p-5 text-center rounded-2xl border shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}><p className="text-xs font-bold opacity-50 uppercase mb-1">Paid</p><p className="text-xl font-black text-emerald-500">{formatCurrency(stats.mamaPaid)}</p></div>
                </div>
                
-               <div className="flex gap-3 shrink-0">
+               <div className="flex gap-3 shrink-0 overflow-x-auto">
                   <button 
-                     onClick={() => setMamaTab('pending')}
-                     className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${mamaTab === 'pending' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'}`}
+                     onClick={() => { setMamaTab('pending'); }}
+                     className={`flex-1 min-w-fit px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${mamaTab === 'pending' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'}`}
                   >
-                     <AlertTriangle size={18} /> Pending Payments
+                     <AlertTriangle size={18} /> <span className="whitespace-nowrap">Pending</span>
                   </button>
                   <button 
-                     onClick={() => setMamaTab('paid')}
-                     className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${mamaTab === 'paid' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'}`}
+                     onClick={() => { setMamaTab('paid'); }}
+                     className={`flex-1 min-w-fit px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${mamaTab === 'paid' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'}`}
                   >
-                     <History size={18} /> Payment History
+                     <History size={18} /> <span className="whitespace-nowrap">History</span>
                   </button>
                </div>
                
-               <div className={`rounded-2xl border flex flex-col flex-1 overflow-hidden shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-100'}`}>
-                  <div className="p-5 border-b flex shrink-0 justify-between items-center">
-                     <h3 className="font-bold flex gap-2 items-center text-lg">
-                        {mamaTab === 'pending' ? <><AlertTriangle size={20} className="text-rose-500"/> Pending Items</> : <><History size={20} className="text-emerald-500"/> Paid Items List</>}
-                     </h3>
-                     {mamaTab === 'pending' && selectedMamaSales.length > 0 && <button onClick={()=>handleMarkMamaPaid(true)} className="bg-rose-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95">Pay Selected ({selectedMamaSales.length})</button>}
+               <div className={`rounded-2xl border flex flex-col flex-1 overflow-hidden shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                  
+                  <div className={`p-5 border-b flex shrink-0 justify-between items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+                      <h3 className={`font-bold flex gap-2 items-center text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {mamaTab === 'pending' ? <><AlertTriangle size={20} className="text-rose-500"/> Pending</> : <><History size={20} className="text-emerald-500"/> Paid</>}
+                      </h3>
+                      {mamaTab === 'pending' && selectedMamaSales.length > 0 && <button onClick={()=>handleMarkMamaPaid(true)} className="bg-rose-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-rose-500/30 transition-all active:scale-95">Pay ({selectedMamaSales.length})</button>}
                   </div>
 
                   <div className="flex-1 overflow-auto">
-                     <table className="w-full text-left text-sm table-fixed min-w-[500px]">
-                        <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-slate-500'} shadow-sm`}>
-                            <tr>
-                                {mamaTab === 'pending' && (
-                                   <th className="p-4 w-16 text-center">
+                      {/* RESPONSIVE TABLE FIX: removed min-w constraint */}
+                      <table className="w-full text-left text-sm table-fixed">
+                         <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}>
+                           <tr>
+                               {mamaTab === 'pending' && (
+                                  <th className="p-4 w-16 text-center">
                                        <input 
                                            type="checkbox" 
                                            checked={sales.filter(s => !s.mamaPaid).length > 0 && sales.filter(s => !s.mamaPaid).every(s => selectedMamaSales.includes(s.id))} 
                                            onChange={handleSelectAllMama}
                                            className="cursor-pointer w-4 h-4 accent-blue-500"
                                        />
-                                   </th>
-                                )}
-                                <th className="p-4">Item Details</th>
-                                {mamaTab === 'paid' && <th className="text-center">Paid Date</th>}
-                                <th className="text-right w-32 p-4">Share Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200/10">
-                           {/* MODIFIED MAPPING: Now uses sortedPendingMamaSales for 'pending' view */}
-                           {mamaTab === 'pending' ? (
-                              sortedPendingMamaSales.length === 0 ? (
-                                <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No pending payments</td></tr>
-                              ) : (
-                                sortedPendingMamaSales.map(s => (
-                                   <tr key={s.id} className={`cursor-pointer transition-colors ${selectedMamaSales.includes(s.id) ? 'bg-rose-500/10' : (darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50')}`} onClick={() => toggleMamaSelection(s.id)}>
-                                      <td className="p-4 text-center"><input type="checkbox" checked={selectedMamaSales.includes(s.id)} readOnly className="w-4 h-4 accent-rose-500 pointer-events-none"/></td>
-                                      <td className="truncate font-medium">{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
-                                      <td className="text-right font-bold text-rose-500 p-4">{s.mamaShare}</td>
-                                   </tr>
-                                ))
-                              )
-                           ) : (
-                              // UPDATED: Using sortedPaidMamaSales instead of raw filter
-                              sortedPaidMamaSales.length === 0 ? (
-                                <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No payment history</td></tr>
-                              ) : (
-                                sortedPaidMamaSales.map(s => (
-                                   <tr key={s.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-slate-50'}`}>
-                                      <td className="p-4 truncate font-medium">{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
-                                      <td className="text-center text-xs opacity-60">
-                                         {s.mamaPaidAt ? new Date(s.mamaPaidAt.seconds * 1000).toLocaleDateString() : (s.date ? new Date(s.date.seconds * 1000).toLocaleDateString() : '-')}
-                                      </td>
-                                      <td className="text-right font-bold text-emerald-500 p-4">{s.mamaShare}</td>
-                                   </tr>
-                                ))
-                              )
-                           )}
-                        </tbody>
-                     </table>
+                                  </th>
+                               )}
+                               <th className="p-4">Item Details</th>
+                               {mamaTab === 'paid' && <th className="text-center">Paid Date</th>}
+                               <th className="text-right w-32 p-4">Share Amount</th>
+                           </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-200/10">
+                            {mamaTab === 'pending' ? (
+                             sortedPendingMamaSales.length === 0 ? (
+                               <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No pending payments</td></tr>
+                             ) : (
+                               sortedPendingMamaSales.map(s => (
+                                  <tr key={s.id} className={`cursor-pointer transition-colors ${selectedMamaSales.includes(s.id) ? 'bg-rose-500/10' : (darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50')}`} onClick={() => toggleMamaSelection(s.id)}>
+                                     <td className="p-4 text-center"><input type="checkbox" checked={selectedMamaSales.includes(s.id)} readOnly className="w-4 h-4 accent-rose-500 pointer-events-none"/></td>
+                                     <td className={`truncate font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
+                                     <td className="text-right font-bold text-rose-500 p-4">{s.mamaShare}</td>
+                                  </tr>
+                               ))
+                             )
+                            ) : (
+                             sortedPaidMamaSales.length === 0 ? (
+                               <tr><td colSpan="4" className="p-12 text-center opacity-40 text-sm border-2 border-dashed rounded-xl m-4">No payment history</td></tr>
+                             ) : (
+                               sortedPaidMamaSales.map(s => (
+                                  <tr key={s.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50'}`}>
+                                     <td className={`p-4 truncate font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{s.suitId} <span className="opacity-50 text-xs font-normal ml-2">({s.brand})</span></td>
+                                     <td className="text-center text-xs opacity-60">
+                                        {s.mamaPaidAt ? new Date(s.mamaPaidAt.seconds * 1000).toLocaleDateString() : (s.date ? new Date(s.date.seconds * 1000).toLocaleDateString() : '-')}
+                                     </td>
+                                     <td className="text-right font-bold text-emerald-500 p-4">{s.mamaShare}</td>
+                                  </tr>
+                               ))
+                             )
+                            )}
+                         </tbody>
+                      </table>
                   </div>
                </div>
             </div>
          )}
 
+         {/* --- INSIGHTS TAB --- */}
+         {activeTab === 'insights' && (
+             <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <div className="p-6">
+                    <h2 className={`text-2xl font-black mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Business Insights</h2>
+                    
+                    {/* WIDGETS */}
+                    {!insightView && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div onClick={() => setInsightView('risk')} className={`p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${darkMode ? 'bg-slate-800 border-slate-700 hover:border-red-500' : 'bg-white border-slate-200 shadow-slate-200/50 hover:border-red-400'}`}>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-4 bg-red-500/10 text-red-500 rounded-2xl"><AlertCircle size={32}/></div>
+                                    <div className={`text-4xl font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>{riskCustomers.length}</div>
+                                </div>
+                                <h3 className={`font-bold text-xl mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Payment Risk</h3>
+                                <p className="text-sm opacity-60">Customers with pending balance not paid in 30+ days.</p>
+                            </div>
+
+                            <div onClick={() => setInsightView('highVol')} className={`p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${darkMode ? 'bg-slate-800 border-slate-700 hover:border-amber-500' : 'bg-white border-slate-200 shadow-slate-200/50 hover:border-amber-400'}`}>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-4 bg-amber-500/10 text-amber-500 rounded-2xl"><Trophy size={32}/></div>
+                                    <div className={`text-4xl font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>{highVolumeCustomers.length}</div>
+                                </div>
+                                <h3 className={`font-bold text-xl mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>High Debt Volume</h3>
+                                <p className="text-sm opacity-60">Customers with remaining balance greater than Rs 10,000.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* LIST VIEW */}
+                    {insightView && (
+                        <div className="h-full flex flex-col">
+                            <button onClick={() => setInsightView(null)} className="mb-6 w-fit text-sm font-bold flex items-center gap-2 text-blue-500 hover:underline">
+                                <Undo2 size={16}/> Back to Insights
+                            </button>
+                            <h3 className={`font-bold text-xl mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {insightView === 'risk' ? 'Payment Risk List' : 'High Debt Customers'}
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
+                                {(insightView === 'risk' ? riskCustomers : highVolumeCustomers).map(c => (
+                                    <div 
+                                        key={c.id} 
+                                        onClick={() => { setViewingCustomer(c); setCustomerModalTab('payments'); }}
+                                        className={`p-5 rounded-2xl cursor-pointer border transition-all hover:shadow-lg hover:-translate-y-1 ${darkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-slate-200 shadow-sm hover:border-blue-300'}`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>{c.name}</p>
+                                            <span className={`font-bold text-sm ${insightView === 'risk' ? 'text-red-500' : 'text-amber-500'}`}>
+                                                {formatCurrency((c.totalBill||0)-(c.totalPaid||0))}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs opacity-50 mb-4">
+                                            {insightView === 'risk' ? 
+                                                `Last Paid: ${c.lastPaymentDate ? new Date(c.lastPaymentDate.seconds*1000).toLocaleDateString() : 'Never'}` 
+                                                : 
+                                                `Total Bill: ${formatCurrency(c.totalBill)}`
+                                            }
+                                        </p>
+                                        <button className="w-full py-2 bg-blue-500/10 text-blue-500 text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
+                                            View Details
+                                        </button>
+                                    </div>
+                                ))}
+                                {(insightView === 'risk' ? riskCustomers : highVolumeCustomers).length === 0 && (
+                                    <div className="col-span-full text-center py-10 opacity-50 border-2 border-dashed rounded-xl">No customers found in this category.</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+             </div>
+         )}
+
          {/* Edit Modal */}
          {editingItem && (
-           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[120] p-4 transition-opacity">
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[120] p-4 transition-opacity animate-fade-in">
               <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all scale-100 ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
-                 <h3 className="font-bold text-xl mb-6 text-center">Edit Inventory Item</h3>
+                 <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
                  <form onSubmit={handleUpdateItem} className="space-y-4">
-                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
+                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
                    <div className="grid grid-cols-2 gap-4">
-                      <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/></div>
-                      <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/></div>
+                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/></div>
+                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/></div>
                    </div>
-                   <div className="flex gap-3 mt-6"><button type="button" onClick={()=>setEditingItem(null)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Cancel</button><button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">Save Changes</button></div>
+                   <div className="flex gap-3 mt-6"><button type="button" onClick={()=>setEditingItem(null)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Cancel</button><button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">Save Changes</button></div>
                  </form>
               </div>
            </div>
@@ -1202,7 +1481,7 @@ export default function App() {
                  {/* Modal Header */}
                  <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                     <div>
-                       <h2 className="text-2xl font-black flex items-center gap-2"><Users className="text-blue-500"/> {activeCustomer.name}</h2>
+                       <h2 className={`text-2xl font-black flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}><Users className="text-blue-500"/> {activeCustomer.name}</h2>
                        <p className="text-xs opacity-50 font-bold uppercase tracking-wider mt-1">Customer Account History</p>
                     </div>
                     <button onClick={() => setViewingCustomer(null)} className="p-2 hover:bg-gray-500/10 rounded-full transition-colors"><X size={24}/></button>
@@ -1212,110 +1491,110 @@ export default function App() {
                  <div className="flex-1 overflow-y-auto p-6">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-3 gap-3 mb-6">
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
                           <p className="text-lg font-black text-blue-500">{formatCurrency(activeCustomer.totalBill)}</p>
                        </div>
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
                           <p className="text-lg font-black text-emerald-500">{formatCurrency(activeCustomer.totalPaid)}</p>
                        </div>
-                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                           <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
                           <p className="text-lg font-black text-rose-500">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
                        </div>
                     </div>
                     
-                    {/* NEW: QUICK ACTION SECTION INSIDE MODAL (FIXED LOGIC) */}
-                    <div className={`p-4 mb-6 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                    {/* Quick Action - UPDATED MOBILE RESPONSIVE FIX */}
+                    <div className={`p-4 mb-6 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                       <label className="text-xs font-bold opacity-50 uppercase mb-2 block">Quick Actions</label>
-                      <div className="flex gap-2">
-                        <input 
-                          inputMode="numeric" 
-                          type="number" 
-                          min="0"
-                          onKeyDown={handleNumberInput} 
-                          placeholder="Amount" 
-                          className={`flex-1 p-2 rounded-lg bg-transparent border text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-300'}`} 
-                          value={modalAmount} 
-                          onChange={e=>setModalAmount(e.target.value)}
-                        />
-                        <button onClick={handleModalPayment} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Pay</button>
-                        <button onClick={handleModalRefund} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Refund</button>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                         <input 
+                           inputMode="numeric" 
+                           type="number" 
+                           min="0"
+                           onKeyDown={handleNumberInput} 
+                           placeholder="Amount" 
+                           className={`w-full sm:flex-1 p-2 rounded-lg bg-transparent border text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-300'}`} 
+                           value={modalAmount} 
+                           onChange={e=>setModalAmount(e.target.value)}
+                         />
+                         <div className="flex gap-2 w-full sm:w-auto">
+                           <button onClick={handleModalPayment} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Pay</button>
+                           <button onClick={handleModalRefund} className="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Refund</button>
+                         </div>
                       </div>
                     </div>
 
                     {/* Tabs for History */}
                     <div className="flex gap-2 mb-4">
-                       <button 
-                          onClick={() => setCustomerModalTab('payments')}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
-                       >
-                          <Receipt size={14} /> Payments
-                       </button>
-                       <button 
-                          onClick={() => setCustomerModalTab('purchases')}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
-                       >
-                          <ShoppingBag size={14} /> Purchases
-                       </button>
+                        <button 
+                           onClick={() => setCustomerModalTab('payments')}
+                           className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                        >
+                           <Receipt size={14} /> Payments
+                        </button>
+                        <button 
+                           onClick={() => setCustomerModalTab('purchases')}
+                           className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                        >
+                           <ShoppingBag size={14} /> Purchases
+                        </button>
                     </div>
 
                     {/* List Content */}
                     <div className="space-y-3">
-                       {customerModalTab === 'payments' ? (
-                          customerHistory.length > 0 ? (
-                             customerHistory.map((record) => (
-                                <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-3">
-                                      {/* DIFFERENT ICON COLOR FOR REFUND */}
-                                      <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                        {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
-                                      </div>
-                                      <div>
-                                         <p className="font-bold text-sm">{record.type || 'Payment'}</p>
-                                         <p className="text-xs opacity-50">{record.date ? new Date(record.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
-                                      </div>
-                                   </div>
-                                   <span className={`font-bold ${record.type === 'Refund' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {record.type === 'Refund' ? '-' : '+'}{formatCurrency(record.amount)}
-                                   </span>
-                                </div>
-                             ))
-                          ) : (
-                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
-                          )
-                       ) : (
-                          customerPurchases.length > 0 ? (
-                             customerPurchases.map((item) => (
-                                <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                   <div className="flex items-center gap-3">
-                                      <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
-                                      <div className="overflow-hidden">
-                                         <p className="font-bold text-sm truncate w-32 sm:w-auto">{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
-                                         <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
-                                      </div>
-                                   </div>
-                                   <div className="flex items-center gap-2">
+                        {customerModalTab === 'payments' ? (
+                           customerHistory.length > 0 ? (
+                              customerHistory.map((record) => (
+                                 <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                       <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                          {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
+                                       </div>
+                                       <div>
+                                          <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{record.type || 'Payment'}</p>
+                                          <p className="text-xs opacity-50">{record.date ? new Date(record.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
+                                       </div>
+                                    </div>
+                                    <span className={`font-bold ${record.type === 'Refund' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                       {record.type === 'Refund' ? '-' : '+'}{formatCurrency(record.amount)}
+                                    </span>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
+                           )
+                        ) : (
+                           customerPurchases.length > 0 ? (
+                              customerPurchases.map((item) => (
+                                 <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                       <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
+                                       <div className="overflow-hidden">
+                                          <p className={`font-bold text-sm truncate w-32 sm:w-auto ${darkMode ? 'text-white' : 'text-gray-900'}`}>{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
+                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
                                        <span className="font-bold text-purple-500">{formatCurrency(item.salePrice)}</span>
-                                       {/* RETURN BUTTON */}
                                        <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openReturnModal(item);
-                                        }}
-                                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-full transition-colors"
-                                        title="Return Item"
-                                      >
-                                        <Undo2 size={16}/>
-                                      </button>
-                                   </div>
-                                </div>
-                             ))
-                          ) : (
-                             <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
-                          )
-                       )}
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             openReturnModal(item);
+                                          }}
+                                          className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-full transition-colors"
+                                          title="Return Item"
+                                       >
+                                          <Undo2 size={16}/>
+                                       </button>
+                                    </div>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
+                           )
+                        )}
                     </div>
                  </div>
               </div>
