@@ -63,8 +63,7 @@ import {
   AlertCircle,
   Trophy,
   Archive,
-  RotateCcw,
-  ChevronRight
+  RotateCcw
 } from 'lucide-react';
 
 // --- 🔴 FIREBASE CONFIG ---
@@ -247,7 +246,7 @@ export default function App() {
   const inventorySearchInput = useRef(null);
   const idsInputRef = useRef(null); 
 
-  // --- INJECT CUSTOM CSS ---
+  // --- INJECT CUSTOM CSS FOR SMOOTH ANIMATIONS ---
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -257,6 +256,7 @@ export default function App() {
       @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
       .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
 
+      /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -1029,7 +1029,6 @@ export default function App() {
                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
                    
                    <div className="flex-1 overflow-auto">
-                      {/* MOBILE CARD VIEW */}
                       <div className="md:hidden p-2 grid grid-cols-2 gap-2">
                           {filteredInv.length === 0 ? (
                               <div className="col-span-2 p-8 text-center opacity-40 text-sm">No items found.</div>
@@ -1046,10 +1045,23 @@ export default function App() {
                                               <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
                                               <span className="text-[10px] opacity-50 block">Cost: {i.orgPrice}</span>
                                           </div>
-                                          <div className="flex gap-1">
-                                              <button onClick={()=>setEditingItem(i)} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg"><Edit size={14}/></button>
-                                              <button onClick={()=>openDeleteModal(i.id, 'inventory')} className="p-1.5 bg-red-500/10 text-red-500 rounded-lg"><Trash2 size={14}/></button>
-                                          </div>
+                                          {/* FIX: Buttons only show if QTY > 0 and are properly clickable */}
+                                          {i.qty > 0 && (
+                                              <div className="flex gap-1 relative z-10">
+                                                  <button 
+                                                      onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} 
+                                                      className="p-2 bg-blue-500 text-white rounded-lg shadow-md active:scale-90 transition-transform"
+                                                  >
+                                                      <Edit size={14}/>
+                                                  </button>
+                                                  <button 
+                                                      onClick={(e)=>{e.stopPropagation(); openDeleteModal(i.id, 'inventory')}} 
+                                                      className="p-2 bg-red-500 text-white rounded-lg shadow-md active:scale-90 transition-transform"
+                                                  >
+                                                      <Trash2 size={14}/>
+                                                  </button>
+                                              </div>
+                                          )}
                                       </div>
                                   </div>
                               ))
@@ -1181,7 +1193,7 @@ export default function App() {
             </div>
          )}
 
-         {/* CUSTOMERS */}
+         {/* CUSTOMERS - CLICKABLE + TOTAL VISIBLE */}
          {activeTab === 'customers' && (
             <div className="flex flex-col h-full overflow-hidden gap-6 pb-20">
                <div className={`shrink-0 p-4 sm:p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 sm:gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
@@ -1226,8 +1238,9 @@ export default function App() {
                         return (
                            <div 
                               key={c.id} 
+                              className={`relative p-3 sm:p-5 rounded-2xl border shadow-sm h-fit transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}
+                              /* FIX: PARENT CLICK FOR WHOLE CARD */
                               onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} 
-                              className={`p-3 sm:p-5 rounded-2xl border shadow-sm h-fit cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg ${darkMode?'bg-slate-800 border-slate-700 hover:border-blue-500/50':'bg-white border-slate-200 shadow-slate-200/50 hover:border-blue-300'}`}
                            >
                               <div className="flex justify-between items-start mb-2 sm:mb-3">
                                   <h4 className={`font-bold text-sm sm:text-lg truncate w-full ${darkMode?'text-white':'text-gray-900'}`}>{c.name}</h4>
@@ -1250,9 +1263,10 @@ export default function App() {
                                   </div>
                               </div>
                               
-                              <div className="mt-3 flex gap-2">
+                              {/* FIX: Explicit View button for clarity */}
+                              <div className="mt-3 flex gap-2 relative z-10">
                                   <button className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
-                                      View
+                                      View Details
                                   </button>
                                   {bal <= 0 && (
                                     <button 
@@ -1281,7 +1295,7 @@ export default function App() {
                             <div 
                                 key={c.id} 
                                 onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}}
-                                className={`p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 cursor-pointer transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
+                                className={`relative p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
                             >
                                 <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
                                     <p className={`font-bold text-sm sm:text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.name}</p>
@@ -1290,7 +1304,7 @@ export default function App() {
                                 <div className="text-[10px] sm:text-sm opacity-60 mb-3">
                                     <div className="flex justify-between"><span>Bal:</span><b>{formatCurrency((c.totalBill||0)-(c.totalPaid||0))}</b></div>
                                 </div>
-                                <div className="flex gap-1.5">
+                                <div className="flex gap-1.5 relative z-10">
                                      <button className="flex-1 py-1.5 bg-slate-500/10 text-slate-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-slate-500 hover:text-white transition-colors">View</button>
                                      <button onClick={(e) => { e.stopPropagation(); openRestoreModal(c.id); }} className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/></button>
                                 </div>
