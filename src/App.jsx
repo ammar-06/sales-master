@@ -63,7 +63,8 @@ import {
   AlertCircle,
   Trophy,
   Archive,
-  RotateCcw
+  RotateCcw,
+  ChevronRight
 } from 'lucide-react';
 
 // --- 🔴 FIREBASE CONFIG ---
@@ -137,7 +138,7 @@ const handleNumberInput = (e) => {
 
 // --- UI Components ---
 const ToastContainer = ({ toasts, removeToast }) => (
-  <div className="fixed bottom-4 right-4 z-[150] flex flex-col gap-2 w-full max-w-xs px-4 md:px-0 pointer-events-none">
+  <div className="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 w-full max-w-xs px-4 md:px-0 pointer-events-none">
     {toasts.map(toast => (
       <div key={toast.id} className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white transform transition-all duration-300 animate-slide-in ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
         {toast.type === 'error' ? <XCircle size={20} className="shrink-0" /> : <CheckCircle size={20} className="shrink-0" />}
@@ -151,7 +152,7 @@ const ToastContainer = ({ toasts, removeToast }) => (
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDanger, darkMode }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className={`p-6 rounded-2xl shadow-2xl w-[95%] max-w-sm transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
         <div className="flex flex-col items-center text-center">
           <div className={`p-4 rounded-full mb-4 ${isDanger ? (darkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-50 text-red-600') : (darkMode ? 'bg-blue-900/30 text-blue-500' : 'bg-blue-50 text-blue-600')}`}>
@@ -169,7 +170,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDange
   );
 };
 
-// RESPONSIVE CARD COMPONENT (Dashboard)
+// RESPONSIVE CARD COMPONENT
 const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode, iconBgClass, iconTextClass }) => (
   <div className={`p-3 sm:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-xl active:scale-95 cursor-default h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
     <div className="flex justify-between items-start mb-2 sm:mb-4">
@@ -246,7 +247,7 @@ export default function App() {
   const inventorySearchInput = useRef(null);
   const idsInputRef = useRef(null); 
 
-  // --- INJECT CUSTOM CSS FOR SMOOTH ANIMATIONS ---
+  // --- INJECT CUSTOM CSS ---
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -256,7 +257,6 @@ export default function App() {
       @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
       .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
 
-      /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -1029,6 +1029,7 @@ export default function App() {
                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
                    
                    <div className="flex-1 overflow-auto">
+                      {/* MOBILE CARD VIEW */}
                       <div className="md:hidden p-2 grid grid-cols-2 gap-2">
                           {filteredInv.length === 0 ? (
                               <div className="col-span-2 p-8 text-center opacity-40 text-sm">No items found.</div>
@@ -1045,7 +1046,10 @@ export default function App() {
                                               <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
                                               <span className="text-[10px] opacity-50 block">Cost: {i.orgPrice}</span>
                                           </div>
-                                          <button onClick={()=>setEditingItem(i)} className="text-blue-500 p-1"><Edit size={14}/></button>
+                                          <div className="flex gap-1">
+                                              <button onClick={()=>setEditingItem(i)} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg"><Edit size={14}/></button>
+                                              <button onClick={()=>openDeleteModal(i.id, 'inventory')} className="p-1.5 bg-red-500/10 text-red-500 rounded-lg"><Trash2 size={14}/></button>
+                                          </div>
                                       </div>
                                   </div>
                               ))
@@ -1177,7 +1181,7 @@ export default function App() {
             </div>
          )}
 
-         {/* CUSTOMERS - CLICKABLE + TOTAL VISIBLE */}
+         {/* CUSTOMERS */}
          {activeTab === 'customers' && (
             <div className="flex flex-col h-full overflow-hidden gap-6 pb-20">
                <div className={`shrink-0 p-4 sm:p-6 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 sm:gap-6 items-center ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
@@ -1229,7 +1233,6 @@ export default function App() {
                                   <h4 className={`font-bold text-sm sm:text-lg truncate w-full ${darkMode?'text-white':'text-gray-900'}`}>{c.name}</h4>
                               </div>
                               
-                              {/* TOTAL BILL BADGE */}
                               <div className="mb-3">
                                  <span className="text-[10px] sm:text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-md font-bold">
                                     Total: {formatCurrency(c.totalBill||0)}
@@ -1246,9 +1249,20 @@ export default function App() {
                                       <b className="text-emerald-500">{formatCurrency(c.totalPaid||0)}</b>
                                   </div>
                               </div>
-                              {bal <= 0 && (
-                                <button onClick={(e)=>{e.stopPropagation(); openDeleteModal(c.id, 'customer')}} className="w-full mt-3 text-[10px] text-red-500 border border-red-500/20 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Remove</button>
-                              )}
+                              
+                              <div className="mt-3 flex gap-2">
+                                  <button className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
+                                      View
+                                  </button>
+                                  {bal <= 0 && (
+                                    <button 
+                                        onClick={(e)=>{e.stopPropagation(); openDeleteModal(c.id, 'customer')}} 
+                                        className="flex-1 py-1.5 bg-red-500/10 text-red-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                    >
+                                        Remove
+                                    </button>
+                                  )}
+                              </div>
                            </div>
                         )
                      })}
@@ -1266,7 +1280,8 @@ export default function App() {
                         {deletedCust.map(c => (
                             <div 
                                 key={c.id} 
-                                className={`p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
+                                onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}}
+                                className={`p-3 sm:p-5 rounded-2xl border opacity-75 hover:opacity-100 cursor-pointer transition-all ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}
                             >
                                 <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
                                     <p className={`font-bold text-sm sm:text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>{c.name}</p>
@@ -1276,8 +1291,8 @@ export default function App() {
                                     <div className="flex justify-between"><span>Bal:</span><b>{formatCurrency((c.totalBill||0)-(c.totalPaid||0))}</b></div>
                                 </div>
                                 <div className="flex gap-1.5">
-                                     <button onClick={() => {setViewingCustomer(c); setCustomerModalTab('payments');}} className="flex-1 py-1.5 bg-slate-500/10 text-slate-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-slate-500 hover:text-white transition-colors">View</button>
-                                     <button onClick={() => openRestoreModal(c.id)} className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/></button>
+                                     <button className="flex-1 py-1.5 bg-slate-500/10 text-slate-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-slate-500 hover:text-white transition-colors">View</button>
+                                     <button onClick={(e) => { e.stopPropagation(); openRestoreModal(c.id); }} className="flex-1 py-1.5 bg-blue-500/10 text-blue-500 text-[10px] sm:text-xs font-bold rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1"><RotateCcw size={12}/></button>
                                 </div>
                             </div>
                         ))}
@@ -1421,6 +1436,150 @@ export default function App() {
                     )}
                 </div>
              </div>
+         )}
+
+         {/* Edit Modal */}
+         {editingItem && (
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 transition-opacity animate-fade-in">
+              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all scale-100 ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
+                 <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
+                 <form onSubmit={handleUpdateItem} className="space-y-4">
+                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
+                   <div className="grid grid-cols-2 gap-4">
+                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/></div>
+                     <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/></div>
+                   </div>
+                   <div className="flex gap-3 mt-6"><button type="button" onClick={()=>setEditingItem(null)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Cancel</button><button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">Save Changes</button></div>
+                 </form>
+              </div>
+           </div>
+         )}
+
+         {/* CUSTOMER HISTORY MODAL */}
+         {activeCustomer && (
+           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4 animate-fade-in">
+              <div className={`w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl transform transition-all scale-100 ${darkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
+                 {/* Modal Header */}
+                 <div className={`p-6 border-b flex justify-between items-start ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                    <div>
+                       <h2 className={`text-2xl font-black flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}><Users className="text-blue-500"/> {activeCustomer.name}</h2>
+                       <p className="text-xs opacity-50 font-bold uppercase tracking-wider mt-1">Customer Account History</p>
+                    </div>
+                    <button onClick={() => setViewingCustomer(null)} className="p-2 hover:bg-gray-500/10 rounded-full transition-colors"><X size={24}/></button>
+                 </div>
+                 
+                 {/* Modal Content */}
+                 <div className="flex-1 overflow-y-auto p-6">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Total Bill</p>
+                          <p className="text-lg font-black text-blue-500">{formatCurrency(activeCustomer.totalBill)}</p>
+                       </div>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Paid</p>
+                          <p className="text-lg font-black text-emerald-500">{formatCurrency(activeCustomer.totalPaid)}</p>
+                       </div>
+                       <div className={`p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                          <p className="text-[10px] font-bold opacity-50 uppercase">Balance</p>
+                          <p className="text-lg font-black text-rose-500">{formatCurrency((activeCustomer.totalBill||0) - (activeCustomer.totalPaid||0))}</p>
+                       </div>
+                    </div>
+                    
+                    {/* Quick Action - UPDATED MOBILE RESPONSIVE FIX */}
+                    <div className={`p-4 mb-6 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                      <label className="text-xs font-bold opacity-50 uppercase mb-2 block">Quick Actions</label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                         <input 
+                           inputMode="numeric" 
+                           type="number" 
+                           min="0"
+                           onKeyDown={handleNumberInput} 
+                           placeholder="Amount" 
+                           className={`w-full sm:flex-1 p-2 rounded-lg bg-transparent border text-sm focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'border-slate-600' : 'border-slate-300'}`} 
+                           value={modalAmount} 
+                           onChange={e=>setModalAmount(e.target.value)}
+                         />
+                         <div className="flex gap-2 w-full sm:w-auto">
+                           <button onClick={handleModalPayment} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Pay</button>
+                           <button onClick={handleModalRefund} className="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95">Refund</button>
+                         </div>
+                      </div>
+                    </div>
+
+                    {/* Tabs for History */}
+                    <div className="flex gap-2 mb-4">
+                        <button 
+                           onClick={() => setCustomerModalTab('payments')}
+                           className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'payments' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                        >
+                           <Receipt size={14} /> Payments
+                        </button>
+                        <button 
+                           onClick={() => setCustomerModalTab('purchases')}
+                           className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-all ${customerModalTab === 'purchases' ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400'}`}
+                        >
+                           <ShoppingBag size={14} /> Purchases
+                        </button>
+                    </div>
+
+                    {/* List Content */}
+                    <div className="space-y-3">
+                        {customerModalTab === 'payments' ? (
+                           customerHistory.length > 0 ? (
+                              customerHistory.map((record) => (
+                                 <div key={record.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                       <div className={`p-2 rounded-full ${record.type === 'Refund' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                          {record.type === 'Refund' ? <RefreshCcw size={16}/> : <Receipt size={16}/>}
+                                       </div>
+                                       <div>
+                                          <p className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{record.type || 'Payment'}</p>
+                                          <p className="text-xs opacity-50">{record.date ? new Date(record.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
+                                       </div>
+                                    </div>
+                                    <span className={`font-bold ${record.type === 'Refund' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                       {record.type === 'Refund' ? '-' : '+'}{formatCurrency(record.amount)}
+                                    </span>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No payment history found</div>
+                           )
+                        ) : (
+                           customerPurchases.length > 0 ? (
+                              customerPurchases.map((item) => (
+                                 <div key={item.id} className={`p-4 rounded-xl flex justify-between items-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                       <div className="p-2 rounded-full bg-purple-500/10 text-purple-500"><ShoppingBag size={16}/></div>
+                                       <div className="overflow-hidden">
+                                          <p className={`font-bold text-sm truncate w-32 sm:w-auto ${darkMode ? 'text-white' : 'text-gray-900'}`}>{item.suitId} <span className="opacity-50 font-normal">({item.brand})</span></p>
+                                          <p className="text-xs opacity-50">{item.date ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'Unknown Date'}</p>
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                       <span className="font-bold text-purple-500">{formatCurrency(item.salePrice)}</span>
+                                       <button 
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             openReturnModal(item);
+                                          }}
+                                          className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-full transition-colors"
+                                          title="Return Item"
+                                       >
+                                          <Undo2 size={16}/>
+                                       </button>
+                                    </div>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="text-center py-8 opacity-40 text-sm border-2 border-dashed rounded-xl">No purchases found</div>
+                           )
+                        )}
+                    </div>
+                 </div>
+              </div>
+           </div>
          )}
 
          </div>
