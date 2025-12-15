@@ -645,7 +645,10 @@ export default function App() {
   const selectPaymentCustomer = (c) => {
     setPaymentForm({ ...paymentForm, customerId: c.id });
     setPaymentCustomerSearch(c.name);
+    setCustomerSearch(c.name); // Filter grid
     setShowCustomerSuggestions(false);
+    setViewingCustomer(c); // Open modal
+    setCustomerModalTab('payments'); // Set modal tab
   };
 
   // New helper for Sale Customer Selection
@@ -1009,8 +1012,8 @@ export default function App() {
 
          {/* INVENTORY */}
          {activeTab === 'inventory' && (
-           <div className="flex flex-col lg:flex-row gap-6 lg:h-full lg:overflow-hidden pb-20">
-             <div className={`p-6 rounded-2xl shadow-sm border h-fit w-full lg:w-80 shrink-0 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+           <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full overflow-hidden pb-20">
+             <div className={`p-4 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 shrink-0 overflow-y-auto max-h-[30vh] lg:max-h-full ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
                 <h3 className={`font-bold mb-6 flex gap-2 items-center text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={20} className="text-blue-500"/> Add Stock</h3>
                 <form onSubmit={handleAddDress} className="space-y-4">
                   <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">IDs (Comma/Space)</label><textarea ref={idsInputRef} required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2 A3..."/></div>
@@ -1023,7 +1026,7 @@ export default function App() {
                 </form>
              </div>
              
-             <div className="flex-1 flex flex-col lg:overflow-hidden lg:min-h-0">
+             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                 <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
                    <div className={`p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}><Search size={18} className="opacity-50"/><input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/></div>
                    <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
@@ -1206,7 +1209,9 @@ export default function App() {
                               className={`w-full p-3 rounded-xl bg-transparent border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${darkMode ? 'border-slate-600 focus:bg-slate-900' : 'border-slate-200 focus:bg-gray-50'}`}
                               value={paymentCustomerSearch}
                               onChange={(e) => {
-                                 setPaymentCustomerSearch(e.target.value);
+                                 const val = e.target.value;
+                                 setPaymentCustomerSearch(val);
+                                 setCustomerSearch(val); // --- FEATURE 1: Syncs filter ---
                                  setShowCustomerSuggestions(true);
                                  setPaymentForm(prev => ({ ...prev, customerId: '' })); 
                               }}
@@ -1451,9 +1456,8 @@ export default function App() {
 
          {/* Edit Modal - FIXED POSITIONING */}
          {editingItem && (
-           <div className="fixed inset-0 h-dvh bg-black/60 backdrop-blur-sm flex items-center justify-center z-[250] p-4 animate-fade-in">
-              {/* Notice I added max-h-full and overflow-y-auto to this inner div below */}
-              <div className={`p-8 rounded-3xl w-full max-w-sm shadow-2xl relative max-h-full overflow-y-auto ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
+           <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+              <div className={`p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-2xl relative max-h-[90vh] overflow-y-auto ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
                  <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
                  <form onSubmit={handleUpdateItem} className="space-y-4">
                    <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
