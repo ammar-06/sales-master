@@ -11,8 +11,6 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   const [editingItem, setEditingItem] = useState(null);
   const [dressForm, setDressForm] = useState({ suitIds: '', brand: '', orgPrice: '', salePrice: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Local Modal State for Inventory
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, id: null });
   const inventorySearchInput = useRef(null);
   const idsInputRef = useRef(null);
@@ -29,24 +27,17 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   const handleAddDress = async (e) => {
     e.preventDefault();
     if (!user || isSubmitting) return;
-    
-    if (!dressForm.suitIds.trim()) { showToast("Product IDs are missing!", 'error'); playSound('error'); return; }
-    if (!dressForm.brand.trim()) { showToast("Brand name is required!", 'error'); playSound('error'); return; }
-    if (!dressForm.orgPrice || Number(dressForm.orgPrice) <= 0) { showToast("Cost Price must be > 0", 'error'); playSound('error'); return; }
-    if (!dressForm.salePrice || Number(dressForm.salePrice) <= 0) { showToast("Sale Price must be > 0", 'error'); playSound('error'); return; }
-
-    if (Number(dressForm.salePrice) < Number(dressForm.orgPrice)) {
-        showToast("Sale Price cannot be less than Cost!", 'error');
-        playSound('error');
-        return;
-    }
+    if (!dressForm.suitIds.trim()) { showToast("Product IDs missing!", 'error'); playSound('error'); return; }
+    if (!dressForm.brand.trim()) { showToast("Brand required!", 'error'); playSound('error'); return; }
+    if (!dressForm.orgPrice || Number(dressForm.orgPrice) <= 0) { showToast("Invalid Cost", 'error'); playSound('error'); return; }
+    if (!dressForm.salePrice || Number(dressForm.salePrice) <= 0) { showToast("Invalid Sale Price", 'error'); playSound('error'); return; }
+    if (Number(dressForm.salePrice) < Number(dressForm.orgPrice)) { showToast("Sale Price < Cost!", 'error'); playSound('error'); return; }
 
     setIsSubmitting(true);
     const newSuitIds = dressForm.suitIds.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(s => s !== "");
     const uniqueInputIds = new Set(newSuitIds);
-    if (newSuitIds.length === 0) { showToast("Invalid ID format", 'error'); setIsSubmitting(false); return; }
-    if (uniqueInputIds.size !== newSuitIds.length) { showToast("Duplicate IDs in input!", 'error'); setIsSubmitting(false); playSound('error'); return; }
-
+    if (newSuitIds.length === 0) { showToast("Invalid IDs", 'error'); setIsSubmitting(false); return; }
+    if (uniqueInputIds.size !== newSuitIds.length) { showToast("Duplicate IDs!", 'error'); setIsSubmitting(false); playSound('error'); return; }
     const duplicates = newSuitIds.filter(id => inventory.some(i => i.suitId === id));
     if (duplicates.length > 0) { showToast(`Exists: ${duplicates.join(', ')}`, 'error'); setIsSubmitting(false); playSound('error'); return; }
 
@@ -66,8 +57,8 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
           await batch.commit();
       }
       setDressForm({ suitIds: '', brand: '', orgPrice: '', salePrice: '' }); 
-      showToast(`Stock Added! (${newSuitIds.length} items)`); playSound('success');
-    } catch (err) { showToast("Failed to add stock", 'error'); } finally { setIsSubmitting(false); }
+      showToast(`Added ${newSuitIds.length} items!`); playSound('success');
+    } catch (err) { showToast("Failed to add", 'error'); } finally { setIsSubmitting(false); }
   };
 
   const handleUpdateItem = async (e) => {
@@ -91,44 +82,42 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full overflow-hidden pb-20">
-      <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Confirm Deletion" message="This action cannot be undone." isDanger={true} darkMode={darkMode} />
+      <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Delete Item?" message="Cannot be undone." isDanger={true} darkMode={darkMode} />
       
-      {/* ADD STOCK FORM - FIXED ON TOP MOBILE */}
-      <div className={`shrink-0 p-4 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-        <h3 className={`font-bold mb-4 flex gap-2 items-center text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={20} className="text-blue-500"/> Add Stock</h3>
-        <form onSubmit={handleAddDress} className="space-y-3">
+      {/* ADD STOCK FORM - COMPACT FOR MOBILE */}
+      <div className={`shrink-0 p-3 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+        <h3 className={`font-bold mb-2 sm:mb-4 flex gap-2 items-center text-base sm:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
+        <form onSubmit={handleAddDress} className="space-y-2">
           <div>
               <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">IDs (Comma/Space)</label>
-              {/* Added text-base to prevent Zoom on mobile */}
-              <textarea ref={idsInputRef} required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2 A3..."/>
+              <textarea ref={idsInputRef} required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2..."/>
           </div>
           <div>
               <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label>
-              <input required className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})}/>
+              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})}/>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
                 <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label>
-                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})}/>
+                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})}/>
             </div>
             <div>
                 <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label>
-                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})}/>
+                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})}/>
             </div>
           </div>
-          <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Add Stock</button>
+          <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Add Stock</button>
         </form>
       </div>
       
       {/* INVENTORY LIST - SCROLLABLE */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-           <div className={`p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+           <div className={`p-3 sm:p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
                <Search size={18} className="opacity-50"/>
-               {/* Added text-base to prevent Zoom on mobile */}
                <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base sm:text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
            </div>
-           <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
+           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
            
            <div className="flex-1 overflow-auto p-2">
               <div className="md:hidden grid grid-cols-2 gap-2">
@@ -143,6 +132,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                       </div>
                   ))}
               </div>
+              {/* Desktop Table View */}
               <table className="hidden md:table w-full text-left text-sm table-fixed">
                  <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}><tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr></thead>
                  <tbody className="divide-y divide-slate-200/10">
@@ -155,7 +145,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
         </div>
       </div>
 
-      {/* EDIT MODAL - CENTERED PERFECTLY */}
+      {/* EDIT MODAL */}
       {editingItem && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
             <div className={`p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-2xl relative max-h-[90vh] overflow-y-auto ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
