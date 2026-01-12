@@ -15,6 +15,8 @@ import Insights from './views/Insights';
 import DeletedCustomers from './views/DeletedCustomers'; 
 import { playSound } from './utils/helpers';
 import CustomerDetailModal from './components/CustomerDetailModal';
+import AddStock from './views/AddStock'; 
+import AvailableStock from './views/AvailableStock';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -195,8 +197,10 @@ export default function App() {
          <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth animate-fade-in">
             {activeTab === 'dashboard' && <Dashboard stats={stats} sales={sales} darkMode={darkMode} />}
             
+            {activeTab === 'add_stock' && <AddStock inventory={inventory} user={user} showToast={showToast} darkMode={darkMode} />}
+
             {activeTab === 'inventory' && <Inventory inventory={inventory} user={user} showToast={showToast} darkMode={darkMode} playSound={playSound} />}
-            
+            {activeTab === 'available_stock' && <AvailableStock inventory={inventory} darkMode={darkMode} />}
             {activeTab === 'sales' && <Sales inventory={inventory} customers={customers} user={user} showToast={showToast} darkMode={darkMode} />}
             
             {activeTab === 'customers' && (

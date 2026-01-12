@@ -9,12 +9,8 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   const [inventorySearch, setInventorySearch] = useState('');
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [dressForm, setDressForm] = useState({ suitIds: '', brand: '', orgPrice: '', salePrice: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, id: null });
-  
   const inventorySearchInput = useRef(null);
-  const idsInputRef = useRef(null);
 
   const filteredInv = useMemo(() => {
     const upperSearch = inventorySearch.toUpperCase();
@@ -24,46 +20,6 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   }, [inventory, inventorySearch, showAvailableOnly]);
 
   const filteredInventoryValue = useMemo(() => filteredInv.reduce((acc, item) => acc + (Number(item.orgPrice)||0), 0), [filteredInv]);
-
-  const handleAddDress = async (e) => {
-    e.preventDefault();
-    if (!user || isSubmitting) return;
-    // ... (Validation Logic Same as before) ...
-    if (!dressForm.suitIds.trim()) { showToast("Product IDs missing!", 'error'); playSound('error'); return; }
-    if (!dressForm.brand.trim()) { showToast("Brand required!", 'error'); playSound('error'); return; }
-    if (!dressForm.orgPrice || Number(dressForm.orgPrice) <= 0) { showToast("Invalid Cost", 'error'); playSound('error'); return; }
-    if (!dressForm.salePrice || Number(dressForm.salePrice) <= 0) { showToast("Invalid Sale Price", 'error'); playSound('error'); return; }
-    if (Number(dressForm.salePrice) < Number(dressForm.orgPrice)) { showToast("Sale Price < Cost!", 'error'); playSound('error'); return; }
-
-    setIsSubmitting(true);
-    const newSuitIds = dressForm.suitIds.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(s => s !== "");
-    
-    // ... (Duplicate Check Logic Same as before) ...
-    const uniqueInputIds = new Set(newSuitIds);
-    if (newSuitIds.length === 0) { showToast("Invalid IDs", 'error'); setIsSubmitting(false); return; }
-    if (uniqueInputIds.size !== newSuitIds.length) { showToast("Duplicate IDs!", 'error'); setIsSubmitting(false); playSound('error'); return; }
-    const duplicates = newSuitIds.filter(id => inventory.some(i => i.suitId === id));
-    if (duplicates.length > 0) { showToast(`Exists: ${duplicates.join(', ')}`, 'error'); setIsSubmitting(false); playSound('error'); return; }
-
-    try {
-      const batches = chunkArray(newSuitIds, 450); 
-      for (const chunk of batches) {
-          const batch = writeBatch(db);
-          chunk.forEach(id => {
-              const docRef = doc(collection(db, `artifacts/${appId}/users/${user.uid}/inventory`));
-              batch.set(docRef, {
-                suitId: id, brand: dressForm.brand.trim(), qty: 1, 
-                orgPrice: Math.round(Number(dressForm.orgPrice)), 
-                salePrice: Math.round(Number(dressForm.salePrice)), 
-                createdAt: serverTimestamp()
-              });
-          });
-          await batch.commit();
-      }
-      setDressForm({ suitIds: '', brand: '', orgPrice: '', salePrice: '' }); 
-      showToast(`Added ${newSuitIds.length} items!`); playSound('success');
-    } catch (err) { showToast("Failed to add", 'error'); } finally { setIsSubmitting(false); }
-  };
 
   const handleUpdateItem = async (e) => {
       e.preventDefault();
@@ -85,84 +41,51 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full overflow-hidden pb-20">
+    <div className="flex flex-col h-full overflow-hidden pb-20">
       <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Delete Item?" message="Cannot be undone." isDanger={true} darkMode={darkMode} />
       
-      {/* --- LEFT SIDE: ADD STOCK FORM --- */}
-      {/* Mobile: Restricted height (max-h-[35vh]) so it doesn't push the list down too far */}
-      <div className={`shrink-0 flex flex-col p-3 rounded-2xl shadow-sm border w-full lg:w-80 max-h-[35vh] lg:max-h-full overflow-y-auto ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-        <h3 className={`shrink-0 font-bold mb-2 flex gap-2 items-center text-sm lg:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
-        
-        <form onSubmit={handleAddDress} className="flex flex-col gap-2 h-full">
-          <div>
-              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="IDs (e.g. A1, A2)"/>
-          </div>
-          <div>
-              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})} placeholder="Brand Name"/>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})} placeholder="Cost Price"/>
-            <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})} placeholder="Sale Price"/>
-          </div>
-          <button disabled={isSubmitting} className="mt-auto w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">Add Stock</button>
-        </form>
-      </div>
-      
-      {/* --- RIGHT SIDE: INVENTORY LIST --- */}
-      {/* Flex-1 ensures it takes all remaining space. min-h-0 allows scrolling inside */}
+      {/* INVENTORY LIST */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl border shadow-sm" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
         
-        {/* Header (Search & Stats) */}
+        {/* Header Block */}
         <div className={`shrink-0 ${darkMode?'bg-slate-800':'bg-white'}`}>
-           <div className={`p-3 border-b flex gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-               <Search size={18} className="opacity-50"/>
-               <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base font-medium" placeholder="Search..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
+           <div className={`p-4 border-b flex gap-3 items-center z-20 ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+               <Search size={20} className="opacity-50"/>
+               <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
            </div>
-           <div className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
+           <div className={`px-6 py-3 shrink-0 text-xs font-bold uppercase tracking-wider flex justify-between z-20 ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
                <span>{filteredInv.length} Items</span>
                <span>Val: {formatCurrency(filteredInventoryValue)}</span>
            </div>
         </div>
            
-        {/* Scrollable Content */}
-        <div className={`flex-1 overflow-y-auto p-2 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+        {/* List Content - REMOVED PADDING p-2 to fix GAP */}
+        <div className={`flex-1 overflow-y-auto ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
               
-              {/* MOBILE VIEW (Grid) */}
-              <div className="md:hidden grid grid-cols-2 gap-2 pb-24">
+              {/* MOBILE GRID - ADDED PADDING HERE INSTEAD */}
+              <div className="md:hidden grid grid-cols-2 gap-2 pb-24 p-2">
                   {filteredInv.length === 0 ? (
                       <div className="col-span-2 flex flex-col items-center justify-center p-8 opacity-40 text-sm"><Package size={32} className="mb-2 opacity-50"/><p>No items found.</p></div>
                   ) : (
                       filteredInv.map(i => (
                       <div key={i.id} className={`p-3 rounded-xl border flex flex-col justify-between ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                           <div>
-                              <div className="flex justify-between items-start mb-1">
-                                  <span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>
-                                  {i.qty > 0 ? <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span> : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>}
-                              </div>
+                              <div className="flex justify-between items-start mb-1"><span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>{i.qty > 0 ? <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span> : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>}</div>
                               <span className={`text-xs font-medium truncate block mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{i.brand}</span>
                           </div>
-                          
                           <div className="pt-2 border-t border-dashed border-gray-500/20 flex justify-between items-end">
-                              <div>
-                                  <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
-                                  <span className="text-[9px] opacity-60">Cost: {i.orgPrice}</span>
-                              </div>
-                              {i.qty > 0 && (
-                                  <div className="flex gap-1">
-                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded active:scale-95"><Edit size={12}/></button>
-                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded active:scale-95"><Trash2 size={12}/></button>
-                                  </div>
-                              )}
+                              <div><span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span><span className="text-[9px] opacity-60">Cost: {i.orgPrice}</span></div>
+                              {i.qty > 0 && (<div className="flex gap-1"><button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded active:scale-95"><Edit size={12}/></button><button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded active:scale-95"><Trash2 size={12}/></button></div>)}
                           </div>
                       </div>
                   )))}
               </div>
 
-              {/* DESKTOP VIEW (Table) */}
+              {/* DESKTOP TABLE - SOLID HEADER */}
               <table className="hidden md:table w-full text-left text-sm table-fixed">
-                 {/* FIXED HEADER: Added Solid Background Colors */}
-                 <thead className={`text-xs uppercase font-bold sticky top-0 z-20 shadow-sm ${darkMode ? 'bg-slate-900 text-slate-400' : 'bg-white text-gray-500'}`}>
-                    <tr>
+                 {/* Sticky Header with Solid Background */}
+                 <thead className={`sticky top-0 z-30 shadow-sm ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                    <tr className={`text-xs uppercase font-bold ${darkMode ? 'text-slate-400' : 'text-gray-500 border-b border-gray-100'}`}>
                         <th className="p-4 w-1/6">ID</th>
                         <th className="w-1/4">Brand</th>
                         <th className="text-right w-1/6">Cost</th>
@@ -193,19 +116,10 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
             <div className={`p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-2xl relative max-h-[90vh] overflow-y-auto ${darkMode?'bg-slate-900 border border-slate-700':'bg-white'}`}>
                 <h3 className={`font-bold text-xl mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Edit Inventory Item</h3>
                 <form onSubmit={handleUpdateItem} className="space-y-4">
-                  <div>
-                      <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label>
-                      <input className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/>
-                  </div>
+                  <div><label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label><input className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label>
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/>
-                    </div>
-                    <div>
-                        <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label>
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/>
-                    </div>
+                    <div><label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/></div>
+                    <div><label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/></div>
                   </div>
                   <div className="flex gap-3 mt-6"><button type="button" onClick={()=>setEditingItem(null)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Cancel</button><button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">Save Changes</button></div>
                 </form>
