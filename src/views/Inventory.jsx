@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { collection, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Package } from 'lucide-react';
 import { db, appId } from '../config/firebase';
 import { formatCurrency, handleNumberInput, chunkArray, playSound } from '../utils/helpers';
 import { ConfirmationModal } from '../components/ui/UIComponents';
@@ -84,7 +84,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full overflow-hidden pb-20">
       <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Delete Item?" message="Cannot be undone." isDanger={true} darkMode={darkMode} />
       
-      {/* ADD STOCK FORM - COMPACT FOR MOBILE */}
+      {/* ADD STOCK FORM - FIXED TOP */}
       <div className={`shrink-0 p-3 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
         <h3 className={`font-bold mb-2 sm:mb-4 flex gap-2 items-center text-base sm:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
         <form onSubmit={handleAddDress} className="space-y-2">
@@ -110,29 +110,71 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
         </form>
       </div>
       
-      {/* INVENTORY LIST - SCROLLABLE */}
+      {/* INVENTORY LIST - SCROLLABLE CONTAINER */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+           {/* Search Header */}
            <div className={`p-3 sm:p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
                <Search size={18} className="opacity-50"/>
                <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base sm:text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
            </div>
-           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}><span>{filteredInv.length} Items</span><span>Val: {formatCurrency(filteredInventoryValue)}</span></div>
            
-           <div className="flex-1 overflow-auto p-2">
+           {/* Stats Header */}
+           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
+               <span>{filteredInv.length} Items</span>
+               <span>Val: {formatCurrency(filteredInventoryValue)}</span>
+           </div>
+           
+           {/* Scrollable Items */}
+           <div className="flex-1 overflow-y-auto p-2 pb-24"> {/* Added pb-24 for mobile scrolling */}
+              
+              {/* MOBILE GRID */}
               <div className="md:hidden grid grid-cols-2 gap-2">
-                  {filteredInv.length === 0 ? <div className="col-span-2 p-8 text-center opacity-40 text-sm">No items found.</div> : filteredInv.map(i => (
-                      <div key={i.id} className={`p-3 rounded-xl border flex flex-col gap-1 ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
-                          <div className="flex justify-between items-start"><span className="font-mono text-blue-500 font-bold text-sm">{i.suitId}</span>{i.qty>0 ? <span className="w-2 h-2 rounded-full bg-emerald-500"></span> : <span className="w-2 h-2 rounded-full bg-rose-500"></span>}</div>
-                          <span className={`text-xs truncate ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</span>
-                          <div className="mt-auto pt-2 flex justify-between items-end border-t border-dashed border-gray-500/20">
-                              <div><span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span><span className="text-[10px] opacity-50 block">Cost: {i.orgPrice}</span></div>
-                              {i.qty > 0 && (<div className="flex gap-1 relative z-10"><button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-2 bg-blue-500 text-white rounded-lg shadow-md active:scale-90 transition-transform"><Edit size={14}/></button><button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-2 bg-red-500 text-white rounded-lg shadow-md active:scale-90 transition-transform"><Trash2 size={14}/></button></div>)}
+                  {filteredInv.length === 0 ? (
+                      <div className="col-span-2 flex flex-col items-center justify-center p-8 opacity-40 text-sm">
+                          <Package size={32} className="mb-2 opacity-50"/>
+                          <p>No items found.</p>
+                      </div>
+                  ) : (
+                      filteredInv.map(i => (
+                      <div key={i.id} className={`p-3 rounded-xl border flex flex-col h-full justify-between transition-all ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                          
+                          {/* Top: ID & Status */}
+                          <div className="flex justify-between items-start mb-1">
+                              <span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>
+                              {i.qty > 0 
+                                ? <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span> 
+                                : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>
+                              }
+                          </div>
+                          
+                          {/* Middle: Brand */}
+                          <span className={`text-xs font-medium truncate mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{i.brand}</span>
+                          
+                          {/* Bottom: Price & Actions */}
+                          <div className="pt-2 border-t border-dashed border-gray-500/10 flex justify-between items-end mt-auto">
+                              <div>
+                                  <span className={`block font-bold text-sm leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
+                                  <span className="text-[9px] font-medium opacity-50 block uppercase tracking-wide">Cost: {i.orgPrice}</span>
+                              </div>
+                              
+                              {/* Only show actions if in stock */}
+                              {i.qty > 0 && (
+                                  <div className="flex gap-1">
+                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-md active:bg-blue-500 active:text-white transition-colors">
+                                          <Edit size={12}/>
+                                      </button>
+                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded-md active:bg-red-500 active:text-white transition-colors">
+                                          <Trash2 size={12}/>
+                                      </button>
+                                  </div>
+                              )}
                           </div>
                       </div>
-                  ))}
+                  )))}
               </div>
-              {/* Desktop Table View */}
+
+              {/* DESKTOP TABLE (Hidden on Mobile) */}
               <table className="hidden md:table w-full text-left text-sm table-fixed">
                  <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}><tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr></thead>
                  <tbody className="divide-y divide-slate-200/10">
