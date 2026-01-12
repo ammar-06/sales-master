@@ -84,7 +84,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full overflow-hidden pb-20">
       <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Delete Item?" message="Cannot be undone." isDanger={true} darkMode={darkMode} />
       
-      {/* ADD STOCK FORM - FIXED TOP */}
+      {/* ADD STOCK FORM - Compact Mobile */}
       <div className={`shrink-0 p-3 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
         <h3 className={`font-bold mb-2 sm:mb-4 flex gap-2 items-center text-base sm:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
         <form onSubmit={handleAddDress} className="space-y-2">
@@ -110,23 +110,24 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
         </form>
       </div>
       
-      {/* INVENTORY LIST - SCROLLABLE CONTAINER */}
+      {/* INVENTORY LIST - FIXED SCROLLING & HEADERS */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-           {/* Search Header */}
-           <div className={`p-3 sm:p-4 border-b flex shrink-0 gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+           
+           {/* Search Header - SOLID BACKGROUND */}
+           <div className={`p-3 sm:p-4 border-b flex shrink-0 gap-3 items-center z-20 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-t-2xl`}>
                <Search size={18} className="opacity-50"/>
                <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base sm:text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
            </div>
            
-           {/* Stats Header */}
-           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
+           {/* Stats Header - SOLID BACKGROUND */}
+           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between z-20 ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
                <span>{filteredInv.length} Items</span>
                <span>Val: {formatCurrency(filteredInventoryValue)}</span>
            </div>
            
-           {/* Scrollable Items */}
-           <div className="flex-1 overflow-y-auto p-2 pb-24"> {/* Added pb-24 for mobile scrolling */}
+           {/* Scrollable Items Container */}
+           <div className="flex-1 overflow-y-auto p-2 pb-24 relative">
               
               {/* MOBILE GRID */}
               <div className="md:hidden grid grid-cols-2 gap-2">
@@ -138,8 +139,6 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                   ) : (
                       filteredInv.map(i => (
                       <div key={i.id} className={`p-3 rounded-xl border flex flex-col h-full justify-between transition-all ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
-                          
-                          {/* Top: ID & Status */}
                           <div className="flex justify-between items-start mb-1">
                               <span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>
                               {i.qty > 0 
@@ -147,26 +146,16 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                                 : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>
                               }
                           </div>
-                          
-                          {/* Middle: Brand */}
                           <span className={`text-xs font-medium truncate mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{i.brand}</span>
-                          
-                          {/* Bottom: Price & Actions */}
                           <div className="pt-2 border-t border-dashed border-gray-500/10 flex justify-between items-end mt-auto">
                               <div>
                                   <span className={`block font-bold text-sm leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
                                   <span className="text-[9px] font-medium opacity-50 block uppercase tracking-wide">Cost: {i.orgPrice}</span>
                               </div>
-                              
-                              {/* Only show actions if in stock */}
                               {i.qty > 0 && (
                                   <div className="flex gap-1">
-                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-md active:bg-blue-500 active:text-white transition-colors">
-                                          <Edit size={12}/>
-                                      </button>
-                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded-md active:bg-red-500 active:text-white transition-colors">
-                                          <Trash2 size={12}/>
-                                      </button>
+                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-md active:bg-blue-500 active:text-white transition-colors"><Edit size={12}/></button>
+                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded-md active:bg-red-500 active:text-white transition-colors"><Trash2 size={12}/></button>
                                   </div>
                               )}
                           </div>
@@ -174,9 +163,12 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                   )))}
               </div>
 
-              {/* DESKTOP TABLE (Hidden on Mobile) */}
+              {/* DESKTOP TABLE */}
               <table className="hidden md:table w-full text-left text-sm table-fixed">
-                 <thead className={`text-xs uppercase font-bold sticky top-0 z-10 backdrop-blur-md ${darkMode ? 'bg-slate-800/90 text-slate-400' : 'bg-white/90 text-gray-500 border-b border-gray-100'} shadow-sm`}><tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr></thead>
+                 {/* Header - SOLID BACKGROUND & HIGH Z-INDEX */}
+                 <thead className={`text-xs uppercase font-bold sticky top-0 z-10 ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-white text-gray-500 border-b border-gray-100'} shadow-sm`}>
+                    <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
+                 </thead>
                  <tbody className="divide-y divide-slate-200/10">
                     {filteredInv.length === 0 ? <tr><td colSpan="6" className="p-12 text-center opacity-40 text-sm">No items found.</td></tr> : filteredInv.map(i => (
                           <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-blue-50/50 border-b border-gray-50'}`}><td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className={`truncate font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</td><td className="text-right opacity-60 font-medium">{i.orgPrice}</td><td className={`text-right font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</td><td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td><td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded transition-colors"><Edit size={16}/></button><button onClick={()=>setModalConfig({isOpen:true, id:i.id})} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded transition-colors"><Trash2 size={16}/></button></>}</td></tr>
