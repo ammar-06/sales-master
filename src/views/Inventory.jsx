@@ -12,6 +12,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   const [dressForm, setDressForm] = useState({ suitIds: '', brand: '', orgPrice: '', salePrice: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, id: null });
+  
   const inventorySearchInput = useRef(null);
   const idsInputRef = useRef(null);
 
@@ -27,6 +28,7 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   const handleAddDress = async (e) => {
     e.preventDefault();
     if (!user || isSubmitting) return;
+    // ... (Validation Logic Same as before) ...
     if (!dressForm.suitIds.trim()) { showToast("Product IDs missing!", 'error'); playSound('error'); return; }
     if (!dressForm.brand.trim()) { showToast("Brand required!", 'error'); playSound('error'); return; }
     if (!dressForm.orgPrice || Number(dressForm.orgPrice) <= 0) { showToast("Invalid Cost", 'error'); playSound('error'); return; }
@@ -35,6 +37,8 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
 
     setIsSubmitting(true);
     const newSuitIds = dressForm.suitIds.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(s => s !== "");
+    
+    // ... (Duplicate Check Logic Same as before) ...
     const uniqueInputIds = new Set(newSuitIds);
     if (newSuitIds.length === 0) { showToast("Invalid IDs", 'error'); setIsSubmitting(false); return; }
     if (uniqueInputIds.size !== newSuitIds.length) { showToast("Duplicate IDs!", 'error'); setIsSubmitting(false); playSound('error'); return; }
@@ -81,81 +85,72 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full overflow-hidden pb-20">
+    <div className="flex flex-col lg:flex-row gap-4 h-full overflow-hidden pb-20">
       <ConfirmationModal isOpen={modalConfig.isOpen} onClose={()=>setModalConfig({...modalConfig, isOpen:false})} onConfirm={confirmDelete} title="Delete Item?" message="Cannot be undone." isDanger={true} darkMode={darkMode} />
       
-      {/* ADD STOCK FORM - Compact Mobile */}
-      <div className={`shrink-0 p-3 sm:p-6 rounded-2xl shadow-sm border w-full lg:w-80 ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-        <h3 className={`font-bold mb-2 sm:mb-4 flex gap-2 items-center text-base sm:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
-        <form onSubmit={handleAddDress} className="space-y-2">
+      {/* --- LEFT SIDE: ADD STOCK FORM --- */}
+      {/* Mobile: Restricted height (max-h-[35vh]) so it doesn't push the list down too far */}
+      <div className={`shrink-0 flex flex-col p-3 rounded-2xl shadow-sm border w-full lg:w-80 max-h-[35vh] lg:max-h-full overflow-y-auto ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
+        <h3 className={`shrink-0 font-bold mb-2 flex gap-2 items-center text-sm lg:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}><Plus size={18} className="text-blue-500"/> Add Stock</h3>
+        
+        <form onSubmit={handleAddDress} className="flex flex-col gap-2 h-full">
           <div>
-              <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">IDs (Comma/Space)</label>
-              <textarea ref={idsInputRef} required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} rows="1" value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="A1, A2..."/>
+              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.suitIds} onChange={e=>setDressForm({...dressForm, suitIds:e.target.value})} placeholder="IDs (e.g. A1, A2)"/>
           </div>
           <div>
-              <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label>
-              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})}/>
+              <input required className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.brand} onChange={e=>setDressForm({...dressForm, brand:e.target.value})} placeholder="Brand Name"/>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-                <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label>
-                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})}/>
-            </div>
-            <div>
-                <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label>
-                <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})}/>
-            </div>
+            <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.orgPrice} onChange={e=>setDressForm({...dressForm, orgPrice:e.target.value})} placeholder="Cost Price"/>
+            <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-2 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-gray-50'}`} value={dressForm.salePrice} onChange={e=>setDressForm({...dressForm, salePrice:e.target.value})} placeholder="Sale Price"/>
           </div>
-          <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Add Stock</button>
+          <button disabled={isSubmitting} className="mt-auto w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all">Add Stock</button>
         </form>
       </div>
       
-      {/* INVENTORY LIST - FIXED SCROLLING & HEADERS */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        <div className={`rounded-2xl border flex flex-col h-full shadow-sm ${darkMode?'bg-slate-800 border-slate-700':'bg-white border-slate-200 shadow-slate-200/50'}`}>
-           
-           {/* Search Header - SOLID BACKGROUND */}
-           <div className={`p-3 sm:p-4 border-b flex shrink-0 gap-3 items-center z-20 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-t-2xl`}>
+      {/* --- RIGHT SIDE: INVENTORY LIST --- */}
+      {/* Flex-1 ensures it takes all remaining space. min-h-0 allows scrolling inside */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl border shadow-sm" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
+        
+        {/* Header (Search & Stats) */}
+        <div className={`shrink-0 ${darkMode?'bg-slate-800':'bg-white'}`}>
+           <div className={`p-3 border-b flex gap-3 items-center ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
                <Search size={18} className="opacity-50"/>
-               <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base sm:text-sm font-medium" placeholder="Search stock..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
+               <input ref={inventorySearchInput} className="bg-transparent outline-none flex-1 text-base font-medium" placeholder="Search..." value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}/>
            </div>
-           
-           {/* Stats Header - SOLID BACKGROUND */}
-           <div className={`px-4 sm:px-6 py-2 shrink-0 text-[10px] sm:text-xs font-bold uppercase tracking-wider flex justify-between z-20 ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
+           <div className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider flex justify-between ${darkMode ? 'bg-slate-900/50 text-slate-400' : 'bg-gray-50 text-slate-500'}`}>
                <span>{filteredInv.length} Items</span>
                <span>Val: {formatCurrency(filteredInventoryValue)}</span>
            </div>
+        </div>
            
-           {/* Scrollable Items Container */}
-           <div className="flex-1 overflow-y-auto p-2 pb-24 relative">
+        {/* Scrollable Content */}
+        <div className={`flex-1 overflow-y-auto p-2 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
               
-              {/* MOBILE GRID */}
-              <div className="md:hidden grid grid-cols-2 gap-2">
+              {/* MOBILE VIEW (Grid) */}
+              <div className="md:hidden grid grid-cols-2 gap-2 pb-24">
                   {filteredInv.length === 0 ? (
-                      <div className="col-span-2 flex flex-col items-center justify-center p-8 opacity-40 text-sm">
-                          <Package size={32} className="mb-2 opacity-50"/>
-                          <p>No items found.</p>
-                      </div>
+                      <div className="col-span-2 flex flex-col items-center justify-center p-8 opacity-40 text-sm"><Package size={32} className="mb-2 opacity-50"/><p>No items found.</p></div>
                   ) : (
                       filteredInv.map(i => (
-                      <div key={i.id} className={`p-3 rounded-xl border flex flex-col h-full justify-between transition-all ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
-                          <div className="flex justify-between items-start mb-1">
-                              <span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>
-                              {i.qty > 0 
-                                ? <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span> 
-                                : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>
-                              }
+                      <div key={i.id} className={`p-3 rounded-xl border flex flex-col justify-between ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                          <div>
+                              <div className="flex justify-between items-start mb-1">
+                                  <span className="font-mono text-blue-500 font-bold text-sm truncate">{i.suitId}</span>
+                                  {i.qty > 0 ? <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span> : <span className="w-2 h-2 rounded-full bg-rose-500 opacity-50"></span>}
+                              </div>
+                              <span className={`text-xs font-medium truncate block mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{i.brand}</span>
                           </div>
-                          <span className={`text-xs font-medium truncate mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{i.brand}</span>
-                          <div className="pt-2 border-t border-dashed border-gray-500/10 flex justify-between items-end mt-auto">
+                          
+                          <div className="pt-2 border-t border-dashed border-gray-500/20 flex justify-between items-end">
                               <div>
-                                  <span className={`block font-bold text-sm leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
-                                  <span className="text-[9px] font-medium opacity-50 block uppercase tracking-wide">Cost: {i.orgPrice}</span>
+                                  <span className={`block font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</span>
+                                  <span className="text-[9px] opacity-60">Cost: {i.orgPrice}</span>
                               </div>
                               {i.qty > 0 && (
                                   <div className="flex gap-1">
-                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded-md active:bg-blue-500 active:text-white transition-colors"><Edit size={12}/></button>
-                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded-md active:bg-red-500 active:text-white transition-colors"><Trash2 size={12}/></button>
+                                      <button onClick={(e)=>{e.stopPropagation(); setEditingItem(i)}} className="p-1.5 bg-blue-500/10 text-blue-500 rounded active:scale-95"><Edit size={12}/></button>
+                                      <button onClick={(e)=>{e.stopPropagation(); setModalConfig({isOpen:true, id:i.id})}} className="p-1.5 bg-red-500/10 text-red-500 rounded active:scale-95"><Trash2 size={12}/></button>
                                   </div>
                               )}
                           </div>
@@ -163,19 +158,32 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                   )))}
               </div>
 
-              {/* DESKTOP TABLE */}
+              {/* DESKTOP VIEW (Table) */}
               <table className="hidden md:table w-full text-left text-sm table-fixed">
-                 {/* Header - SOLID BACKGROUND & HIGH Z-INDEX */}
-                 <thead className={`text-xs uppercase font-bold sticky top-0 z-10 ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-white text-gray-500 border-b border-gray-100'} shadow-sm`}>
-                    <tr><th className="p-4 w-1/6 whitespace-nowrap">ID</th><th className="w-1/4 whitespace-nowrap">Brand</th><th className="text-right w-1/6 whitespace-nowrap">Cost</th><th className="text-right w-1/6 whitespace-nowrap">Sale</th><th className="text-center w-1/6 whitespace-nowrap">Status</th><th className="text-center w-1/6 whitespace-nowrap">Act</th></tr>
+                 {/* FIXED HEADER: Added Solid Background Colors */}
+                 <thead className={`text-xs uppercase font-bold sticky top-0 z-20 shadow-sm ${darkMode ? 'bg-slate-900 text-slate-400' : 'bg-white text-gray-500'}`}>
+                    <tr>
+                        <th className="p-4 w-1/6">ID</th>
+                        <th className="w-1/4">Brand</th>
+                        <th className="text-right w-1/6">Cost</th>
+                        <th className="text-right w-1/6">Sale</th>
+                        <th className="text-center w-1/6">Status</th>
+                        <th className="text-center w-1/6">Act</th>
+                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-200/10">
                     {filteredInv.length === 0 ? <tr><td colSpan="6" className="p-12 text-center opacity-40 text-sm">No items found.</td></tr> : filteredInv.map(i => (
-                          <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-blue-50/50 border-b border-gray-50'}`}><td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td><td className={`truncate font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</td><td className="text-right opacity-60 font-medium">{i.orgPrice}</td><td className={`text-right font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</td><td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td><td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded transition-colors"><Edit size={16}/></button><button onClick={()=>setModalConfig({isOpen:true, id:i.id})} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded transition-colors"><Trash2 size={16}/></button></>}</td></tr>
+                          <tr key={i.id} className={`transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-blue-50/50 border-b border-gray-50'}`}>
+                              <td className="p-4 font-mono text-blue-500 font-bold truncate">{i.suitId}</td>
+                              <td className={`truncate font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{i.brand}</td>
+                              <td className="text-right opacity-60 font-medium">{i.orgPrice}</td>
+                              <td className={`text-right font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{i.salePrice}</td>
+                              <td className="text-center">{i.qty>0?<span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold">Stock</span>:<span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold">Sold</span>}</td>
+                              <td className="text-center flex justify-center gap-2 py-4">{i.qty>0 && <><button onClick={()=>setEditingItem(i)} className="hover:text-blue-500 p-2 hover:bg-blue-500/10 rounded transition-colors"><Edit size={16}/></button><button onClick={()=>setModalConfig({isOpen:true, id:i.id})} className="hover:text-red-500 p-2 hover:bg-red-500/10 rounded transition-colors"><Trash2 size={16}/></button></>}</td>
+                          </tr>
                     ))}
                  </tbody>
               </table>
-           </div>
         </div>
       </div>
 
@@ -187,16 +195,16 @@ export default function Inventory({ inventory, user, showToast, darkMode }) {
                 <form onSubmit={handleUpdateItem} className="space-y-4">
                   <div>
                       <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Brand</label>
-                      <input className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/>
+                      <input className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.brand} onChange={e=>setEditingItem({...editingItem, brand:e.target.value})}/>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Cost</label>
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/>
+                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.orgPrice} onChange={e=>setEditingItem({...editingItem, orgPrice:e.target.value})}/>
                     </div>
                     <div>
                         <label className="text-[10px] font-bold opacity-50 uppercase tracking-wider mb-1 block">Sale</label>
-                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base sm:text-sm focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/>
+                        <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-3 border rounded-xl bg-transparent outline-none text-base focus:ring-2 focus:ring-blue-500 ${darkMode?'border-slate-600':'border-slate-200'}`} value={editingItem.salePrice} onChange={e=>setEditingItem({...editingItem, salePrice:e.target.value})}/>
                     </div>
                   </div>
                   <div className="flex gap-3 mt-6"><button type="button" onClick={()=>setEditingItem(null)} className={`flex-1 py-3 rounded-xl font-bold transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Cancel</button><button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">Save Changes</button></div>
