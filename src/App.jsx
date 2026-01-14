@@ -244,12 +244,13 @@ export default function App() {
       {/* GLOBAL CUSTOMER DETAIL MODAL */}
       {viewingCustomer && (
         <CustomerDetailModal 
-          activeCustomer={viewingCustomer} 
+          // FIX: Ab yeh Live List se customer dhoond kar layega, taake foran update ho jaye
+          activeCustomer={customers.find(c => c.id === viewingCustomer.id) || viewingCustomer}
           onClose={() => setViewingCustomer(null)}
           darkMode={darkMode}
           user={user}
-          payments={payments}
-          sales={sales}
+          payments={payments} // Live payments list
+          sales={sales}       // Live sales list
           showToast={showToast}
         />
       )}

@@ -8,7 +8,8 @@ export const LoadingSpinner = () => (
 );
 
 export const ToastContainer = ({ toasts, removeToast }) => (
-  <div className="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 w-full max-w-xs px-4 md:px-0 pointer-events-none">
+  // FIX: Z-Index increased to 300 (Higher than Modal's 250)
+  <div className="fixed bottom-4 right-4 z-[300] flex flex-col gap-2 w-full max-w-xs px-4 md:px-0 pointer-events-none">
     {toasts.map(toast => (
       <div key={toast.id} className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white transform transition-all duration-300 animate-slide-in ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
         {toast.type === 'error' ? <XCircle size={20} className="shrink-0" /> : <CheckCircle size={20} className="shrink-0" />}
@@ -41,7 +42,6 @@ export const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, 
 };
 
 export const Card = ({ title, value, subtext, icon: Icon, colorClass, darkMode, iconBgClass, iconTextClass }) => (
-  // UPDATED BORDER HERE: border-slate-300 for clearer visibility
   <div className={`p-3 sm:p-5 rounded-2xl shadow-sm border flex flex-col justify-between transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-xl active:scale-95 cursor-default h-full ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300'}`}>
     <div className="flex justify-between items-start mb-2 sm:mb-4">
        <div className={`p-2 rounded-xl shadow-sm ${darkMode ? colorClass : iconBgClass}`}>
