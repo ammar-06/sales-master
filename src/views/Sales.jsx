@@ -84,7 +84,8 @@ export default function Sales({ inventory, customers, user, showToast, darkMode 
              <label className="text-xs font-bold opacity-50 block mb-2 uppercase tracking-wider">Search Product</label>
              <div className={`flex items-center p-3 sm:p-4 border rounded-2xl transition-all focus-within:ring-2 focus-within:ring-blue-500 ${darkMode?'border-slate-600 bg-slate-900':'border-slate-200 bg-white'}`}>
                 <Search size={20} className="opacity-50 mr-3"/>
-                <input autoFocus className="bg-transparent outline-none flex-1 font-medium text-sm sm:text-base" placeholder="Type ID (e.g. A1)..." value={itemSearchQuery} onChange={e => setItemSearchQuery(e.target.value)}/>
+                {/* FIX: Removed autoFocus, changed text-sm to text-base */}
+                <input className="bg-transparent outline-none flex-1 font-medium text-base sm:text-sm" placeholder="Type ID (e.g. A1)..." value={itemSearchQuery} onChange={e => setItemSearchQuery(e.target.value)}/>
              </div>
              {availableItems.length > 0 && (
                <div className={`absolute w-full mt-2 rounded-2xl border shadow-2xl z-20 overflow-hidden ${darkMode?'bg-slate-800 border-slate-600':'bg-white border-slate-100'}`}>
@@ -110,10 +111,13 @@ export default function Sales({ inventory, customers, user, showToast, darkMode 
           </div>
           <div className="space-y-5">
              <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Customer Name</label><div className="relative">
-                <input type="text" required className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`} placeholder="Type name..." value={saleForm.customerName} onChange={(e) => { setSaleForm({...saleForm, customerName: e.target.value}); setShowSaleCustomerSuggestions(true); }} onFocus={() => setShowSaleCustomerSuggestions(true)} onBlur={() => setTimeout(() => setShowSaleCustomerSuggestions(false), 200)}/>
+                {/* FIX: Added text-base sm:text-sm */}
+                <input type="text" required className={`w-full p-4 border rounded-xl bg-transparent outline-none text-base sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`} placeholder="Type name..." value={saleForm.customerName} onChange={(e) => { setSaleForm({...saleForm, customerName: e.target.value}); setShowSaleCustomerSuggestions(true); }} onFocus={() => setShowSaleCustomerSuggestions(true)} onBlur={() => setTimeout(() => setShowSaleCustomerSuggestions(false), 200)}/>
                 {showSaleCustomerSuggestions && saleForm.customerName && saleCustomerMatches.length > 0 && (<div className={`absolute top-full left-0 w-full mt-1 rounded-xl border shadow-xl z-50 overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>{saleCustomerMatches.map(c => (<div key={c.id} onMouseDown={() => { setSaleForm({...saleForm, customerName: c.name}); setShowSaleCustomerSuggestions(false); }} className={`p-3 text-sm cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${darkMode ? 'border-slate-700' : 'border-slate-100'} border-b last:border-0`}>{c.name}</div>))}</div>)}
              </div></div>
-             <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Paid Amount</label><input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-4 border rounded-xl bg-transparent outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`} value={saleForm.paidAmount} onChange={e=>setSaleForm({...saleForm, paidAmount:e.target.value})}/></div>
+             <div><label className="text-xs font-bold opacity-50 uppercase tracking-wider mb-2 block">Paid Amount</label>
+             {/* FIX: Added text-base sm:text-sm */}
+             <input inputMode="numeric" type="number" onKeyDown={handleNumberInput} className={`w-full p-4 border rounded-xl bg-transparent outline-none text-base sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all ${darkMode?'border-slate-600 focus:bg-slate-900':'border-slate-200 focus:bg-white'}`} value={saleForm.paidAmount} onChange={e=>setSaleForm({...saleForm, paidAmount:e.target.value})}/></div>
              <button onClick={handleProcessSale} disabled={isSubmitting || cart.length===0} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95">CONFIRM SALE</button>
           </div>
        </div>
