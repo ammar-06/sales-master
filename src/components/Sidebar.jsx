@@ -1,5 +1,5 @@
-import React from 'react';
-import { LayoutDashboard, Shirt, ShoppingCart, Users, Handshake, BarChart3, Archive, LogOut, X, PlusCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, Shirt, ShoppingCart, Users, Handshake, BarChart3, Archive, LogOut, X, PlusCircle, CheckCircle, Download } from 'lucide-react';
 
 const menuItems = [
   { id: 'dashboard',       icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,6 +14,24 @@ const menuItems = [
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, userProfileName, mobileMenuOpen, setMobileMenuOpen, onLogout, setViewingCustomer }) {
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
 
   const handleNav = (id) => {
     setActiveTab(id);
@@ -84,6 +102,18 @@ export default function Sidebar({ activeTab, setActiveTab, userProfileName, mobi
 
         {/* Bottom actions */}
         <div className="px-3 pb-4 space-y-1.5 shrink-0" style={{ borderTop: '0.5px solid #2E3A47', paddingTop: '12px' }}>
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all duration-150 mb-2 active:scale-95"
+              style={{ background: '#F5A623', color: '#0F1520' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#E09410'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#F5A623'; }}
+            >
+              <Download size={15}/> Install App
+            </button>
+          )}
+
           <button
             onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-150"
