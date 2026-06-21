@@ -1,3 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Design Tokens ─────────────────────────────────── */
+:root {
+  --bg-root:       #131920;
+  --bg-surface:    #1C2530;
+  --bg-elevated:   #222E3C;
+  --bg-sidebar:    #0F1520;
+
+  --border:        #2E3A47;
+  --border-subtle: #243040;
+  --border-focus:  #4A5E72;
+
+  --text-primary:  #F0F4F8;
+  --text-secondary:#8D9BAA;
+  --text-muted:    #5E7080;
+  --text-link:     #F5A623;
+
+  --amber:         #F5A623;
+  --amber-hover:   #E09410;
+  --amber-soft:    rgba(245,166,35,0.12);
+  --amber-border:  rgba(245,166,35,0.3);
+
+  --green:         #4ADE80;
+  --red:           #FC6B6B;
+  --blue:          #60A5FA;
+  --muted:         #5E7080;
+}
+
+/* ── Base Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  background-color: var(--bg-root);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbars ─────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--bg-root); }
+::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-focus); }
+
+/* ── Animations ─────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in  { animation: fadeIn  0.2s ease both; }
+.animate-slide-in { animation: slideIn 0.2s ease both; }

@@ -1,49 +1,98 @@
 import React from 'react';
-// CheckCircle add kiya hai niche wali line mein
-import { LayoutDashboard, Shirt, ShoppingCart, Users, Handshake, BarChart3, Archive, LogOut, Sun, Moon, X, PlusCircle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Shirt, ShoppingCart, Users, Handshake, BarChart3, Archive, LogOut, X, PlusCircle, CheckCircle } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, userProfileName, mobileMenuOpen, setMobileMenuOpen, darkMode, setDarkMode, onLogout, setViewingCustomer }) {
-  
-  const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'add_stock', icon: PlusCircle, label: 'Add Stock' },
-    { id: 'available_stock', icon: CheckCircle, label: 'Available Stock' }, // <-- NEW TAB HERE
-    { id: 'inventory', icon: Shirt, label: 'All Inventory' }, // Naam thoda change kiya taake clear ho
-    { id: 'sales', icon: ShoppingCart, label: 'Sales' },
-    { id: 'customers', icon: Users, label: 'Customers' },
-    { id: 'mama', icon: Handshake, label: 'Partner Share' },
-    { id: 'insights', icon: BarChart3, label: 'Insights' },
-    { id: 'trash', icon: Archive, label: 'Deleted Customers' },
-  ];
+const menuItems = [
+  { id: 'dashboard',       icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'add_stock',       icon: PlusCircle,      label: 'Add Stock' },
+  { id: 'available_stock', icon: CheckCircle,     label: 'Available Stock' },
+  { id: 'inventory',       icon: Shirt,           label: 'All Inventory' },
+  { id: 'sales',           icon: ShoppingCart,    label: 'Sales' },
+  { id: 'customers',       icon: Users,           label: 'Customers' },
+  { id: 'mama',            icon: Handshake,       label: 'Partner Share' },
+  { id: 'insights',        icon: BarChart3,       label: 'Insights' },
+  { id: 'trash',           icon: Archive,         label: 'Deleted Customers' },
+];
+
+export default function Sidebar({ activeTab, setActiveTab, userProfileName, mobileMenuOpen, setMobileMenuOpen, onLogout, setViewingCustomer }) {
+
+  const handleNav = (id) => {
+    setActiveTab(id);
+    setViewingCustomer(null);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <>
+      {/* Mobile overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden" onClick={() => setMobileMenuOpen(false)}></div>
+        <div
+          className="fixed inset-0 z-30 md:hidden"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setMobileMenuOpen(false)}
+        />
       )}
-      
-      <div className={`fixed inset-y-0 left-0 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 z-40 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-950' : 'bg-slate-900 text-white'}`}>
-        <div onClick={() => { setActiveTab('dashboard'); setViewingCustomer(null); setMobileMenuOpen(false); }} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer">
-            <div className="bg-blue-600 p-2 rounded-lg"><Shirt className="text-white" size={20}/></div>
-            <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Sales Master</h1>
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wide">{userProfileName || 'User'}</p>
-            </div>
-            <button onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }} className="md:hidden text-white ml-auto hover:bg-white/10 rounded-full p-1"><X/></button>
+
+      <div
+        className={`fixed inset-y-0 left-0 w-60 flex flex-col z-40 transition-transform duration-300 md:relative md:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: '#0F1520', borderRight: '0.5px solid #2E3A47' }}
+      >
+        {/* Brand */}
+        <div
+          className="flex items-center gap-3 px-5 py-5 cursor-pointer shrink-0"
+          style={{ borderBottom: '0.5px solid #2E3A47' }}
+          onClick={() => handleNav('dashboard')}
+        >
+          <div className="p-2 rounded-lg" style={{ background: 'rgba(245,166,35,0.15)', color: '#F5A623' }}>
+            <Shirt size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-bold text-base leading-tight" style={{ color: '#F0F4F8' }}>Sales Master</h1>
+            <p className="font-mono text-[10px] uppercase tracking-wider truncate" style={{ color: '#5E7080' }}>{userProfileName || 'User'}</p>
+          </div>
+          <button
+            className="md:hidden rounded-full p-1 hover:bg-white/10 transition-colors"
+            style={{ color: '#8D9BAA' }}
+            onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }}
+          >
+            <X size={16}/>
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {menuItems.map(i => (
-              <button key={i.id} onClick={() => {setActiveTab(i.id); setViewingCustomer(null); setMobileMenuOpen(false);}} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:translate-x-2 ${activeTab === i.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
-                <i.icon size={20} /> <span className="capitalize font-medium">{i.label}</span>
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {menuItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNav(item.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-left relative"
+                style={{
+                  color:       isActive ? '#F5A623' : '#8D9BAA',
+                  background:  isActive ? 'rgba(245,166,35,0.12)' : 'transparent',
+                  borderLeft:  isActive ? '3px solid #F5A623' : '3px solid transparent',
+                }}
+                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#1C2530'; e.currentTarget.style.color = '#F0F4F8'; } }}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8D9BAA'; } }}
+              >
+                <item.icon size={17} />
+                <span>{item.label}</span>
               </button>
-            ))}
+            );
+          })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-2">
-            <button onClick={() => setDarkMode(!darkMode)} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-colors">{darkMode ? <Sun size={14}/> : <Moon size={14}/>} {darkMode ? "Light Mode" : "Dark Mode"}</button>
-            <button onClick={onLogout} className="w-full flex justify-center gap-2 py-2 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-500/20 transition-colors"><LogOut size={14}/> Logout</button>
+        {/* Bottom actions */}
+        <div className="px-3 pb-4 space-y-1.5 shrink-0" style={{ borderTop: '0.5px solid #2E3A47', paddingTop: '12px' }}>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-150"
+            style={{ color: '#FC6B6B', background: 'transparent', border: '1px solid transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(252,107,107,0.08)'; e.currentTarget.style.borderColor = 'rgba(252,107,107,0.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+          >
+            <LogOut size={14}/> Logout
+          </button>
         </div>
       </div>
     </>

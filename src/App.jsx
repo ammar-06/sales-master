@@ -158,99 +158,92 @@ export default function App() {
      };
   }, [inventory, sales, customers]);
 
-  if (authLoading) return <div className={`h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-gray-50'}`}><LoadingSpinner /></div>;
+  if (authLoading) return <div className="h-screen flex items-center justify-center" style={{ background: '#131920' }}><LoadingSpinner /></div>;
   if (!user) return <Auth />;
 
   return (
-    <div className={`flex h-dvh font-sans overflow-hidden ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50/50 text-slate-800'}`}>
+    <div className="flex h-dvh font-sans overflow-hidden" style={{ background: '#131920', color: '#F0F4F8' }}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       
       {/* GLOBAL MODAL */}
-      <ConfirmationModal 
-        isOpen={modalConfig.isOpen} 
-        onClose={() => setModalConfig({...modalConfig, isOpen: false})} 
-        onConfirm={handleConfirmAction} 
-        title={modalConfig.title} 
-        message={modalConfig.message} 
-        isDanger={modalConfig.isDanger} 
-        darkMode={darkMode} 
+      <ConfirmationModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        onConfirm={handleConfirmAction}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        isDanger={modalConfig.isDanger}
       />
       
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        userProfileName={userProfileName} 
-        mobileMenuOpen={mobileMenuOpen} 
-        setMobileMenuOpen={setMobileMenuOpen} 
-        darkMode={darkMode} 
-        setDarkMode={setDarkMode} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        userProfileName={userProfileName}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
         onLogout={openLogoutModal}
         setViewingCustomer={setViewingCustomer}
       />
       
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-         <div className={`md:hidden flex shrink-0 justify-between items-center p-4 border-b ${darkMode ? 'border-slate-800' : 'bg-white border-slate-200'}`}>
-            <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-blue-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"><Menu/></button>
-            <h2 className="font-bold uppercase tracking-wider text-sm text-slate-500">{activeTab === 'mama' ? "PARTNER SHARE" : activeTab}</h2><div className="w-8"></div>
+         <div className="md:hidden flex shrink-0 justify-between items-center px-4 py-3" style={{ borderBottom: '0.5px solid #2E3A47' }}>
+            <button onClick={() => setMobileMenuOpen(true)} className="p-2 rounded-lg active:scale-95 transition-transform" style={{ background: 'rgba(245,166,35,0.12)', color: '#F5A623' }}><Menu size={20}/></button>
+            <h2 className="font-semibold uppercase tracking-wider text-xs" style={{ color: '#8D9BAA' }}>{activeTab === 'mama' ? 'PARTNER SHARE' : activeTab}</h2>
+            <div className="w-8"/>
          </div>
 
          <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth animate-fade-in">
-            {activeTab === 'dashboard' && <Dashboard stats={stats} sales={sales} darkMode={darkMode} />}
-            
-            {activeTab === 'add_stock' && <AddStock inventory={inventory} user={user} showToast={showToast} darkMode={darkMode} />}
+            {activeTab === 'dashboard' && <Dashboard stats={stats} sales={sales} />}
 
-            {activeTab === 'inventory' && <Inventory inventory={inventory} user={user} showToast={showToast} darkMode={darkMode} playSound={playSound} />}
-            {activeTab === 'available_stock' && <AvailableStock inventory={inventory} darkMode={darkMode} />}
-            {activeTab === 'sales' && <Sales inventory={inventory} customers={customers} user={user} showToast={showToast} darkMode={darkMode} />}
-            
+            {activeTab === 'add_stock' && <AddStock inventory={inventory} user={user} showToast={showToast} />}
+
+            {activeTab === 'inventory' && <Inventory inventory={inventory} user={user} showToast={showToast} />}
+            {activeTab === 'available_stock' && <AvailableStock inventory={inventory} />}
+            {activeTab === 'sales' && <Sales inventory={inventory} customers={customers} user={user} showToast={showToast} />}
+
             {activeTab === 'customers' && (
-              <Customers 
-                customers={customers} 
-                payments={payments} 
-                sales={sales} 
-                user={user} 
-                showToast={showToast} 
-                darkMode={darkMode} 
+              <Customers
+                customers={customers}
+                payments={payments}
+                sales={sales}
+                user={user}
+                showToast={showToast}
                 setViewingCustomer={setViewingCustomer}
                 setCustomerModalTab={setCustomerModalTab}
                 viewingCustomer={viewingCustomer}
                 customerModalTab={customerModalTab}
               />
             )}
-            
-            {activeTab === 'mama' && <PartnerShare sales={sales} stats={stats} user={user} showToast={showToast} darkMode={darkMode} />}
-            
+
+            {activeTab === 'mama' && <PartnerShare sales={sales} stats={stats} user={user} showToast={showToast} />}
+
             {activeTab === 'insights' && (
-              <Insights 
-                customers={customers} 
-                darkMode={darkMode} 
-                setViewingCustomer={setViewingCustomer} 
-                setCustomerModalTab={setCustomerModalTab} 
+              <Insights
+                customers={customers}
+                setViewingCustomer={setViewingCustomer}
+                setCustomerModalTab={setCustomerModalTab}
               />
             )}
-            
+
             {activeTab === 'trash' && (
-              <DeletedCustomers 
-                customers={customers} 
-                user={user} 
-                showToast={showToast} 
-                darkMode={darkMode} 
-                setViewingCustomer={setViewingCustomer} 
-                setCustomerModalTab={setCustomerModalTab} 
+              <DeletedCustomers
+                customers={customers}
+                user={user}
+                showToast={showToast}
+                setViewingCustomer={setViewingCustomer}
+                setCustomerModalTab={setCustomerModalTab}
               />
             )}
          </div>
       </div>
       {/* GLOBAL CUSTOMER DETAIL MODAL */}
       {viewingCustomer && (
-        <CustomerDetailModal 
-          // FIX: Ab yeh Live List se customer dhoond kar layega, taake foran update ho jaye
+        <CustomerDetailModal
           activeCustomer={customers.find(c => c.id === viewingCustomer.id) || viewingCustomer}
           onClose={() => setViewingCustomer(null)}
-          darkMode={darkMode}
           user={user}
-          payments={payments} // Live payments list
-          sales={sales}       // Live sales list
+          payments={payments}
+          sales={sales}
           showToast={showToast}
         />
       )}

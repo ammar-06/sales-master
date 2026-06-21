@@ -33,16 +33,5 @@ export const handleNumberInput = (e) => {
   }
 };
 
-export const playSound = (type) => {
-  const soundUrls = {
-    pop: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
-    success: 'https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3',
-    error: 'https://assets.mixkit.co/sfx/preview/mixkit-simple-game-countdown-921.mp3',
-    delete: 'https://assets.mixkit.co/sfx/preview/mixkit-interface-option-select-2573.mp3'
-  };
-  try {
-    const audio = new Audio(soundUrls[type]);
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
-  } catch (e) {}
-};
+// Sounds removed — playSound is kept as a no-op to avoid import errors
+export const playSound = () => {};
